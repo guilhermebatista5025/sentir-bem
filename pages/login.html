@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Área do Paciente | Psicólogo Messias Sousa</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="login-body">
+
+  <div class="login-container">
+    
+    <!-- Left Side - Brand Showcase -->
+    <aside class="login-aside">
+      <div class="login-aside-top">
+        <a href="../index.html" class="logo-link">
+          <img src="../assets/logo-transparente.png" alt="Logo Psicólogo Messias Sousa" style="height: 100px; margin: -20px 0; display: block; width: auto;">
+        </a>
+      </div>
+      
+      <div class="login-aside-center">
+        <!-- Brand SVG illustration -->
+        <svg viewBox="0 0 300 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 200px; height: auto;" class="float">
+          <!-- Deep blue themed profile & mind gears concept -->
+          <path d="M150 30C188.5 30 220 55 220 100C220 125 210 135 215 155C220 175 230 185 220 205C210 225 185 240 150 245C165 220 175 185 170 150C165 115 140 85 125 70C135 50 142 30 150 30Z" fill="var(--color-primary)" />
+          <path d="M150 70C130 45 95 50 95 85C95 120 140 155 150 162C160 155 205 120 205 85C205 50 170 45 150 70Z" fill="var(--color-tertiary)" opacity="0.9" />
+          <path d="M150 162C138 155 122 160 115 175C108 190 112 210 125 220C138 230 150 215 150 200C150 215 162 230 175 220C188 210 192 190 185 175C178 160 162 155 150 162Z" fill="var(--color-secondary)" />
+        </svg>
+        <blockquote class="login-quote">
+          "Silencie sua mente e recupere o controle de suas emoções. A mudança começa na <span>prática</span>."
+        </blockquote>
+      </div>
+      
+      <div class="login-aside-bottom">
+        <p>&copy; 2026 Psicólogo Messias Sousa. CRP 05/55349.</p>
+      </div>
+    </aside>
+
+    <!-- Right Side - Login Form -->
+    <main class="login-main">
+      <div class="login-form-wrapper">
+        <div class="login-form-header">
+          <h2>Seja bem-vindo</h2>
+          <p>Não possui cadastro? <a href="#" id="signupLink">Criar uma conta</a></p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <!-- Email input group with floating label -->
+          <div class="form-group">
+            <div class="form-input-wrapper">
+              <input type="email" id="email" class="form-input" placeholder=" " required autocomplete="email">
+              <label for="email" class="form-label">Endereço de E-mail</label>
+            </div>
+          </div>
+
+          <!-- Password input group with floating label -->
+          <div class="form-group">
+            <div class="form-input-wrapper">
+              <input type="password" id="password" class="form-input" placeholder=" " required autocomplete="current-password">
+              <label for="password" class="form-label">Sua Senha</label>
+              <button type="button" class="btn-toggle-password" id="togglePassword" aria-label="Mostrar/Ocultar Senha">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="rememberMe">
+              <span>Lembrar de mim</span>
+            </label>
+            <a href="#" class="forgot-password-link" id="forgotPassword">Esqueceu a senha?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
+            <span>Entrar na Plataforma</span>
+            <div class="spinner"></div>
+          </button>
+
+          <div class="divider">Ou acesse com</div>
+
+          <!-- Social logins -->
+          <div class="social-login-grid">
+            <button type="button" class="btn-social" id="googleBtn">
+              <i class="fab fa-google" style="color: #EA4335;"></i> Google
+            </button>
+            <button type="button" class="btn-social" id="appleBtn">
+              <i class="fab fa-apple" style="color: #000;"></i> Apple
+            </button>
+          </div>
+
+          <!-- Back to home -->
+          <div style="text-align: center;">
+            <a href="../index.html" class="btn-back-home">
+              <i class="fa-solid fa-arrow-left-long"></i> Voltar para o Site
+            </a>
+          </div>
+        </form>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="../js/script.js"></script>
+</body>
+</html>
