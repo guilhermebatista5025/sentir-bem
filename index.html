@@ -18,15 +18,14 @@
   <nav class="navbar glass" id="navbar">
     <div class="container">
       <a href="#inicio" class="logo-link">
-        <img src="assets/logo-transparente.png" alt="Logo Psicólogo Messias Sousa" class="navbar-logo">
+        <img src="assets/logo-oficial.png" alt="Logo Psicólogo Messias Sousa" class="navbar-logo">
       </a>
 
       <!-- Menu links for Desktop -->
       <ul class="nav-links" id="navLinks">
         <li class="nav-item"><a href="#inicio">Início</a></li>
-        <li class="nav-item"><a href="#sobre">Sobre Mim</a></li>
         <li class="nav-item"><a href="#servicos">Serviços</a></li>
-        <li class="nav-item"><a href="#depoimentos">Depoimentos</a></li>
+        <li class="nav-item"><a href="#depoimentos">Depoimentos</a></li>  
         <li class="nav-item"><a href="#faq">Dúvidas</a></li>
         
         <!-- Mobile Actions -->
@@ -40,10 +39,10 @@
 
       <!-- Desktop CTA Actions -->
       <div class="nav-actions">
+      <div class="nav-actions">
         <a href="pages/login.html" class="btn btn-secondary">Entrar</a>
-        <a href="https://wa.me/5521975891580?text=Olá! Gostaria de agendar uma consulta com o Psicólogo Messias Sousa." target="_blank" class="btn btn-whatsapp whatsapp-btn">
-          <i class="fab fa-whatsapp"></i> AGENDAR SESSÃO
-        </a>
+        <a href="pages/cadastro.html" class="btn btn-secondary">Cadastre-se</a>
+
       </div>
 
       <!-- Hamburger Menu for Mobile -->
@@ -63,281 +62,315 @@
     </video>
     <div class="container">
       <div class="hero-grid">
-        <!-- Hero Text Content -->
         <div class="hero-content">
-          <div class="badge" data-aos="fade-up" data-aos-delay="200">
+          <div class="hero-brand-subtitle">
             <i class="fa-solid fa-heart-pulse"></i> Equilíbrio &amp; Controle Emocional
           </div>
-          <h1 class="hero-title" data-aos="fade-up" data-aos-delay="400">
-            Silencie sua mente e recupere o controle emocional com estratégias práticas
+          <h1 class="hero-brand-title">
+            <span class="word-1">SENTIR</span>
+            <span class="word-2">BEM</span>
           </h1>
-          <p class="hero-description" data-aos="fade-up" data-aos-delay="600">
-            Mesmo que você esteja cansado de pensar demais e não consiga desligar a mente.
+          <p class="hero-tagline">
+            Silencie sua mente e recupere o controle Emocional com estratégias.
+            <span class="hero-subtagline">Mesmo que você esteja cansado de pensar demais e não consiga desligar.</span>
           </p>
-          <div class="hero-actions" data-aos="fade-up" data-aos-delay="800">
+          <div class="hero-actions">
             <a href="https://wa.me/5521975891580?text=Olá! Gostaria de agendar uma consulta com o Psicólogo Messias Sousa." target="_blank" class="btn btn-whatsapp">
               <i class="fab fa-whatsapp"></i> AGENDE SUA PRIMEIRA SESSÃO
             </a>
-            <a href="#sobre" class="btn btn-secondary-white">Saber Mais</a>
+            <a href="#servicos" class="btn btn-secondary-white">Saber Mais</a>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Problem Section -->
-  <section class="section problem-section" id="problema">
-    <div class="container">
-      <div class="problem-grid">
-        <div class="problem-text-content" data-aos="fade-right">
-          <h2 class="problem-title">Você sente que sua mente não para…</h2>
-          <p class="problem-paragraph">
-            Que, mesmo quando tudo parece “sob controle” por fora, por dentro existe um cansaço constante?
-          </p>
-          <p class="problem-paragraph">
-            É como se você estivesse sempre ligado, pensando, analisando, se cobrando… E nunca realmente em paz.
-          </p>
-          <p class="problem-paragraph">
-            Talvez você esteja funcionando no automático há tempo demais. E agora, tudo que você queria… era simplesmente conseguir respirar com leveza.
-          </p>
-          <p class="problem-paragraph font-highlight">
-            O mais difícil nem sempre é o que você sente… É ter que lidar com tudo isso em silêncio.
-          </p>
-          <p class="problem-paragraph">
-            Porque, para os outros, você continua funcionando. Cumpre suas responsabilidades, mantém sua rotina, segue em frente.
-          </p>
-          
-          <h3 class="problem-sub-title">Mas por dentro… é como se algo estivesse sempre no limite.</h3>
-          
-          <p class="problem-paragraph">
-            E isso não significa fraqueza. Significa que você chegou no seu limite emocional, e precisa de um novo caminho.
-          </p>
-          <p class="problem-paragraph">
-            Você provavelmente já tentou lidar com isso sozinho. Tentou se distrair, ocupar a mente, “pensar positivo”… Consumiu conteúdos, ouviu conselhos, tentou ignorar.
-          </p>
-          <p class="problem-paragraph font-bold">
-            Mas nada disso resolve quando o problema está na forma como sua mente funciona.
-          </p>
-          <p class="problem-paragraph">
-            Porque não é falta de esforço. É que ninguém te ensinou como lidar com seus pensamentos, emoções e padrões internos.
-          </p>
-          <p class="problem-paragraph font-highlight-blue">
-            E sem isso… você continua preso no mesmo ciclo.
-          </p>
-        </div>
-        
-        <div class="problem-visual-content" data-aos="fade-left">
-          <div class="problem-image-wrapper">
-            <img src="assets/problem_image.jpg" alt="Jesus é aquela paz que nunca vai embora" class="problem-image">
-            <div class="floating-badge-stats">
-              <span class="badge-num">+5000</span>
-              <span class="badge-label">ATENDIMENTOS</span>
+  <!-- Plans Showcase Section -->
+  <section class="plans-showcase" id="tcc" aria-label="Planos para clientes e profissionais">
+    <div class="plans-stage" data-plans-stage>
+      <div class="plans-slide plans-slide-client is-active" data-plan-slide="0" aria-hidden="false">
+        <div class="plans-layout">
+          <div class="plans-intro">
+            <span class="plans-kicker"><i class="fa-regular fa-user"></i> Para clientes</span>
+            <h2>Escolha o plano ideal para seu cuidado emocional.</h2>
+            <p>Tenha acesso a psicólogos, agendamento fácil e recursos para acompanhar sua jornada com segurança e acolhimento.</p>
+            <div class="plans-intro-actions">
+              <a href="#" class="plans-primary-action">Assinar agora <i class="fa-solid fa-arrow-right"></i></a>
+              <a href="#client-benefits" class="plans-secondary-action">Ver benefícios <i class="fa-solid fa-chevron-right"></i></a>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Stats Counter Banner -->
-  <section class="stats-banner">
-    <div class="stats-pattern-overlay"></div>
-    <div class="container">
-      <div class="stats-grid">
-        <!-- Stat Item 1 -->
-        <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
-          <span class="stat-number" data-target="5000">+5000</span>
-          <p class="stat-title">Atendimentos realizados</p>
-        </div>
-        <!-- Stat Item 2 -->
-        <div class="stat-card" data-aos="fade-up" data-aos-delay="200">
-          <span class="stat-number" data-target="5000">+5000</span>
-          <p class="stat-title">Horas de formação e aprofundamento nas ferramentas clínicas</p>
-        </div>
-        <!-- Stat Item 3 -->
-        <div class="stat-card" data-aos="fade-up" data-aos-delay="300">
-          <span class="stat-number" data-target="14">+14</span>
-          <p class="stat-title">Anos de dedicação ao estudo da ciência psicológica</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TCC Methodology Section -->
-  <section class="section tcc-section" id="tcc">
-    <div class="container">
-      <div class="tcc-grid">
-        <div class="tcc-left" data-aos="fade-right">
-          <h2 class="tcc-title">A estratégia que faltava para sair do ciclo de ansiedade e sobrecarga</h2>
-          <p class="tcc-desc">
-            A Terapia Cognitivo-Comportamental (TCC) funciona como um “treino da sua mente”.
-          </p>
-          <p class="tcc-desc">
-            Estudos científicos comprovam que, enquanto muitas abordagens focam apenas em falar sobre o que você sente, a TCC atua diretamente na forma como você pensa, interpreta e reage às situações.
-          </p>
-          <p class="tcc-desc font-italic">
-            É como ajustar um “filtro interno” que hoje distorce sua percepção e intensifica sua ansiedade.
-          </p>
-          
-          <div class="tcc-learning">
-            <h4>Você aprende a:</h4>
-            <ul class="tcc-bullets-list">
-              <li><i class="fa-solid fa-circle-check"></i> Identificar pensamentos automáticos que te sabotam</li>
-              <li><i class="fa-solid fa-circle-check"></i> Reestruturar padrões mentais disfuncionais</li>
-              <li><i class="fa-solid fa-circle-check"></i> Desenvolver respostas emocionais mais equilibradas</li>
-            </ul>
+          <div class="pricing-cards">
+            <article class="pricing-card">
+              <div class="pricing-icon"><i class="fa-brands fa-pagelines"></i></div>
+              <h3>Gratuito</h3><div class="pricing-price"><small>R$</small><strong>0</strong><span>/mês</span></div>
+              <p>Para conhecer a plataforma</p>
+              <ul><li>1 agendamento por mês</li><li>Acesso básico</li><li>Suporte por e-mail</li></ul>
+              <a href="#">Começar grátis</a>
+            </article>
+            <article class="pricing-card pricing-card-featured">
+              <span class="pricing-popular"><i class="fa-solid fa-star"></i> Mais escolhido</span>
+              <div class="pricing-icon"><i class="fa-solid fa-seedling"></i></div>
+              <h3>Plus</h3><div class="pricing-price"><small>R$</small><strong>29,90</strong><span>/mês</span></div>
+              <p>Mais cuidado e praticidade</p>
+              <ul><li>Agendamentos ilimitados</li><li>Chat com psicólogo</li><li>Lembretes automáticos</li><li>Histórico completo</li></ul>
+              <a href="#">Assinar Plus</a>
+            </article>
+            <article class="pricing-card">
+              <div class="pricing-icon"><i class="fa-solid fa-code-branch"></i></div>
+              <h3>Ultra</h3><div class="pricing-price"><small>R$</small><strong>59,90</strong><span>/mês</span></div>
+              <p>Experiência completa</p>
+              <ul><li>Tudo do Plus</li><li>Prioridade no suporte</li><li>Conteúdos exclusivos</li><li>Recursos premium</li></ul>
+              <a href="#">Assinar Ultra</a>
+            </article>
           </div>
-          
-          <p class="tcc-desc highlight-text">
-            E o mais importante: você não fica só falando, você aprende ferramentas práticas para aplicar no seu dia a dia.
-          </p>
-          <p class="tcc-desc font-bold">
-            Essa é a diferença entre entender o problema… e realmente começar a mudar.
-          </p>
         </div>
+      </div>
 
-        <div class="tcc-right" data-aos="fade-left">
-          <div class="process-card">
-            <h3 class="process-card-title">Um processo pensado para gerar mudanças reais</h3>
-            <p class="process-card-subtitle">
-              Mais do que falar, você aprende ferramentas práticas para lidar com seus desafios e retomar o equilíbrio.
-            </p>
-            
-            <div class="process-steps">
-              <!-- Step 1 -->
-              <div class="step-item">
-                <div class="step-icon"><i class="fa-solid fa-video"></i></div>
-                <div class="step-content">
-                  <h5>ATENDIMENTO ONLINE</h5>
-                  <p>Cuide da sua saúde emocional de onde estiver, com privacidade, segurança e a tranquilidade de um ambiente familiar.</p>
-                </div>
-              </div>
-              <!-- Step 2 -->
-              <div class="step-item">
-                <div class="step-icon"><i class="fa-solid fa-sitemap"></i></div>
-                <div class="step-content">
-                  <h5>PROCESSO CLARO E ESTRUTURADO</h5>
-                  <p>Você entende cada etapa da terapia, sabendo exatamente o que está sendo trabalhado e por quê.</p>
-                </div>
-              </div>
-              <!-- Step 3 -->
-              <div class="step-item">
-                <div class="step-icon"><i class="fa-solid fa-microchip"></i></div>
-                <div class="step-content">
-                  <h5>TÉCNICAS BASEADAS EM CIÊNCIA</h5>
-                  <p>A terapia é conduzida com métodos comprovados, focados em gerar mudanças reais e consistentes.</p>
-                </div>
-              </div>
-              <!-- Step 4 -->
-              <div class="step-item">
-                <div class="step-icon"><i class="fa-solid fa-square-poll-vertical"></i></div>
-                <div class="step-content">
-                  <h5>RESULTADOS APLICÁVEIS NA VIDA REAL</h5>
-                  <p>O que você aprende nas sessões se transforma em ações concretas fora delas, no trabalho, nos relacionamentos e na sua rotina.</p>
-                </div>
-              </div>
+      <div class="plans-slide plans-slide-professional" data-plan-slide="1" aria-hidden="true">
+        <div class="plans-layout">
+          <div class="plans-intro">
+            <span class="plans-kicker"><i class="fa-solid fa-user-doctor"></i> Para profissionais</span>
+            <h2>Seja um profissional parceiro e <em>desbloqueie sua área administrativa.</em></h2>
+            <p>Gerencie pacientes, consultas e finanças em um painel completo para psicólogos e clínicas.</p>
+            <div class="plans-intro-actions">
+              <a href="#" class="plans-primary-action"><i class="fa-solid fa-user-plus"></i> Quero ser parceiro</a>
+              <a href="#" class="plans-secondary-action"><i class="fa-regular fa-circle-play"></i> Ver demonstração</a>
             </div>
           </div>
+          <div class="pricing-cards">
+            <article class="pricing-card"><div class="pricing-icon"><i class="fa-solid fa-rocket"></i></div><h3>Start</h3><div class="pricing-price"><small>R$</small><strong>49,90</strong><span>/mês</span></div><p>Para profissionais autônomos</p><ul><li>Até 1 psicólogo</li><li>Agenda e prontuário</li><li>Chat com clientes</li><li>Relatórios básicos</li></ul><a href="#">Assinar Start</a></article>
+            <article class="pricing-card pricing-card-featured"><span class="pricing-popular"><i class="fa-solid fa-star"></i> Mais popular</span><div class="pricing-icon"><i class="fa-regular fa-chess-queen"></i></div><h3>Pro</h3><div class="pricing-price"><small>R$</small><strong>99,90</strong><span>/mês</span></div><p>Para consultórios em crescimento</p><ul><li>Até 5 profissionais</li><li>Financeiro completo</li><li>Relatórios avançados</li><li>Automação de lembretes</li></ul><a href="#">Assinar Pro</a></article>
+            <article class="pricing-card"><div class="pricing-icon"><i class="fa-regular fa-gem"></i></div><h3>Clinic Ultra</h3><div class="pricing-price"><small>R$</small><strong>189,90</strong><span>/mês</span></div><p>Para clínicas e equipes</p><ul><li>Profissionais ilimitados</li><li>Gestão de equipe</li><li>Permissões avançadas</li><li>Integrações</li><li>Suporte prioritário</li></ul><a href="#">Assinar Clinic Ultra</a></article>
+          </div>
         </div>
       </div>
+
+      <div class="plans-controls" role="tablist" aria-label="Escolha o público dos planos">
+        <button type="button" class="plans-control is-active" data-plan-target="0" role="tab" aria-selected="true">
+          <i class="fa-regular fa-user"></i> Clientes
+        </button>
+        <button type="button" class="plans-control" data-plan-target="1" role="tab" aria-selected="false">
+          <i class="fa-solid fa-user-doctor"></i> Profissionais
+        </button>
+      </div>
+
+      <div class="plans-progress" aria-hidden="true"><span></span></div>
     </div>
   </section>
 
   <!-- Specialties Section -->
   <section class="section specialties-section" id="servicos">
     <div class="container">
-      <div class="section-header" data-aos="fade-up">
-        <span class="section-badge">Especialidades</span>
-        <h2 class="section-title">Quando é o momento de buscar ajuda?</h2>
+      <div class="section-header center" data-aos="fade-up">
+        <span class="section-badge-blue">ESTAMOS AQUI POR VOCÊ</span>
+        <h2 class="section-title-dark">Quando é o momento de buscar ajuda?</h2>
+        <p class="section-subtitle-dark">Reconhecer os sinais é o primeiro passo para transformar sua vida. <strong>Você não está sozinho.</strong></p>
       </div>
 
-      <div class="specialties-grid">
-        <!-- Specialty Card 1 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_1.jpg');" data-aos="fade-up" data-aos-delay="100">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Ansiedade e mente acelerada</h3>
-            <p class="specialty-desc">Aprenda a desacelerar seus pensamentos e retomar o controle do seu presente.</p>
+      <div class="specialties-grid-new">
+        <!-- Card 1 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_1.jpg" alt="Ansiedade" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-brain"></i></div>
+            <h3 class="card-title-new">Ansiedade e mente acelerada</h3>
+            <p class="card-desc-new">Preocupações constantes, sensação de alerta e dificuldade para relaxar.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Ansiedade e mente acelerada." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 2 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_2.jpg');" data-aos="fade-up" data-aos-delay="200">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Insônia e dificuldade para desligar</h3>
-            <p class="specialty-desc">Estratégias práticas para acalmar a mente e recuperar um sono reparador.</p>
+
+        <!-- Card 2 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_2.jpg" alt="Insônia" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-moon"></i></div>
+            <h3 class="card-title-new">Insônia e dificuldade para desligar</h3>
+            <p class="card-desc-new">Pensamentos que não param e noites mal dormidas.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Insônia e noites mal dormidas." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 3 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_3.jpg');" data-aos="fade-up" data-aos-delay="300">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Tristeza persistente e desânimo</h3>
-            <p class="specialty-desc">Apoio clínico para restabelecer a vitalidade, o prazer e o sentido no cotidiano.</p>
+
+        <!-- Card 3 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_3.jpg" alt="Tristeza" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-cloud-showers-water"></i></div>
+            <h3 class="card-title-new">Tristeza persistente e desânimo</h3>
+            <p class="card-desc-new">Falta de motivação, vazio interior e perda do prazer nas coisas.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Tristeza persistente e desânimo." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 4 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_4.jpg');" data-aos="fade-up" data-aos-delay="100">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Estresse e sobrecarga emocional</h3>
-            <p class="specialty-desc">Desenvolva inteligência emocional para lidar com pressões diárias e evitar o esgotamento.</p>
+
+        <!-- Card 4 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_4.jpg" alt="Estresse" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-square-poll-vertical"></i></div>
+            <h3 class="card-title-new">Estresse e sobrecarga emocional</h3>
+            <p class="card-desc-new">Excesso de responsabilidades e sensação de esgotamento físico e mental.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Estresse e sobrecarga emocional." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 5 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_5.jpg');" data-aos="fade-up" data-aos-delay="200">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Dificuldades nos relacionamentos</h3>
-            <p class="specialty-desc">Melhore sua comunicação, estabeleça limites saudáveis e resolva conflitos interpessoais.</p>
+
+        <!-- Card 5 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_5.jpg" alt="Relacionamentos" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-heart-crack"></i></div>
+            <h3 class="card-title-new">Dificuldades nos relacionamentos</h3>
+            <p class="card-desc-new">Conflitos frequentes, falta de conexão e comunicação.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Dificuldades nos relacionamentos." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 6 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_6.jpg');" data-aos="fade-up" data-aos-delay="300">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Autocobrança excessiva</h3>
-            <p class="specialty-desc">Liberte-se da busca incessante por perfeição e adote uma postura mais autocompassiva.</p>
+
+        <!-- Card 6 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_6.jpg" alt="Autocobrança" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-battery-three-quarters"></i></div>
+            <h3 class="card-title-new">Autocobrança excessiva</h3>
+            <p class="card-desc-new">Perfeccionismo que gera culpa, pressão constante e nunca é suficiente.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Autocobrança excessiva." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 7 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_7.jpg');" data-aos="fade-up" data-aos-delay="100">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Sensação de vazio ou falta de direção</h3>
-            <p class="specialty-desc">Explore seus valores pessoais e redescubra propósitos autênticos para sua vida.</p>
+
+        <!-- Card 7 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_7.jpg" alt="Vazio" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-compass"></i></div>
+            <h3 class="card-title-new">Sensação de vazio ou falta de direção</h3>
+            <p class="card-desc-new">Incerteza sobre o futuro, falta de propósito e insatisfação constante.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Vazio ou falta de direção." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 8 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_8.jpg');" data-aos="fade-up" data-aos-delay="200">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Desenvolvimento pessoal e emocional</h3>
-            <p class="specialty-desc">Fortaleça sua autoestima, autoconfiança e capacidade de tomar decisões seguras.</p>
+
+        <!-- Card 8 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_8.jpg" alt="Desenvolvimento" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-spa"></i></div>
+            <h3 class="card-title-new">Desenvolvimento pessoal e emocional</h3>
+            <p class="card-desc-new">Desejo de autoconhecimento, equilíbrio e evolução contínua.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre Desenvolvimento pessoal e emocional." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
-        <!-- Specialty Card 9 -->
-        <div class="specialty-card" style="background-image: url('assets/specialty_9.jpg');" data-aos="fade-up" data-aos-delay="300">
-          <div class="specialty-overlay"></div>
-          <div class="specialty-content">
-            <h3 class="specialty-title">Entre outros desafios emocionais</h3>
-            <p class="specialty-desc">Um espaço seguro e sigiloso para tratar de qualquer questão que afete sua saúde mental.</p>
+
+        <!-- Card 9 -->
+        <div class="specialty-card-new" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-visual-wrapper">
+            <img src="assets/specialty_9.jpg" alt="Outros Desafios" class="card-img-left">
+            <div class="card-img-fade"></div>
+          </div>
+          <div class="card-info-right">
+            <div class="card-icon-circle"><i class="fa-solid fa-mountain"></i></div>
+            <h3 class="card-title-new">Entre outros desafios emocionais</h3>
+            <p class="card-desc-new">Cada história é única. Buscar ajuda é um ato de coragem e cuidado.</p>
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar sobre outros desafios emocionais." target="_blank" class="card-arrow-btn"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
+      </div>
+
+      <!-- Banner de rodapé -->
+      <div class="specialties-footer-banner" data-aos="fade-up">
+        <i class="fa-regular fa-heart"></i>
+        <span>Cuidar da mente é cuidar da vida. <a href="https://wa.me/5521975891580?text=Olá! Quero dar o primeiro passo hoje." target="_blank">Dê o primeiro passo hoje.</a></span>
       </div>
     </div>
   </section>
 
-  <!-- Intermediate CTA Section -->
-  <section class="section cta-section-wrapper">
+  <!-- Chatbot Section -->
+  <section class="section chatbot-section" id="acolhimento-24h">
     <div class="container">
-      <div class="cta-blue-card" data-aos="zoom-in">
-        <p class="cta-text">
-          Talvez você não precise continuar lidando com tudo isso sozinho. A terapia pode ser o espaço onde você finalmente começa a entender sua mente e construir uma forma mais leve de viver. Atendimento online, com sigilo e acolhimento.
-        </p>
-        <a href="https://wa.me/5521975891580?text=Olá! Gostaria de agendar uma consulta com o Psicólogo Messias Sousa." target="_blank" class="btn btn-whatsapp-white">
-          <i class="fab fa-whatsapp"></i> AGENDAR SESSÃO
-        </a>
+      <div class="chatbot-grid">
+        <!-- Left Column: Text & Features -->
+        <div class="chatbot-content" data-aos="fade-right">
+          <span class="chatbot-badge">
+            <i class="fa-regular fa-comment-dots"></i> Acolhimento 24h
+          </span>
+          
+          <h2 class="chatbot-title">
+            Converse sempre que precisar, <span class="highlight">estamos aqui.</span>
+          </h2>
+          
+          <p class="chatbot-desc">
+            Nosso chatbot terapêutico está disponível 24 horas por dia para ouvir, orientar e ajudar você a lidar melhor com suas emoções.
+          </p>
+          
+          <div class="chatbot-actions">
+            <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar com o suporte do chatbot Sentir-Bem." target="_blank" class="btn btn-primary chatbot-btn">
+              <i class="fa-regular fa-comment-dots"></i> Conversar agora
+            </a>
+            <a href="#tcc" class="chatbot-link-how">
+              Saiba como funciona <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+          
+          <!-- Bottom Features Box -->
+          <div class="chatbot-features-card">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div class="feature-info">
+                <h4>Sigiloso e seguro</h4>
+                <p>Suas conversas são 100% protegidas.</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fa-solid fa-brain"></i>
+              </div>
+              <div class="feature-info">
+                <h4>Técnicas comprovadas</h4>
+                <p>Baseado na Terapia Cognitivo-Comportamental.</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fa-solid fa-lock"></i>
+              </div>
+              <div class="feature-info">
+                <h4>Privacidade em primeiro lugar</h4>
+                <p>Seus dados e conversas sempre protegidos.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Column: Stitched Element -->
+        <div class="chatbot-visual" data-aos="fade-left">
+          <div class="chatbot-image-wrapper">
+            <img src="assets/seçao-chatbot/elementos-celular.png" alt="Sentir-Bem Chatbot Acolhimento" class="chatbot-img">
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -390,23 +423,24 @@
 
   <!-- Testimonials Section -->
   <section class="section testimonials-section" id="depoimentos">
+    <span class="testimonials-glow testimonials-glow-one" aria-hidden="true"></span>
+    <span class="testimonials-glow testimonials-glow-two" aria-hidden="true"></span>
     <div class="container">
-      <div class="section-header center" data-aos="fade-up">
-        <span class="section-badge">HISTÓRIAS DE CRESCIMENTO</span>
-        <h2 class="section-title">Veja como outras pessoas encontraram mais equilíbrio emocional através da terapia</h2>
-        
-        <!-- Google review stats header summary -->
-        <div class="google-badge-summary">
-          <span class="badge-excellent">EXCELENTE</span>
-          <div class="badge-stars">
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
-            <i class="fa-solid fa-star"></i>
+      <div class="testimonials-heading" data-aos="fade-up">
+        <div class="testimonials-heading-copy">
+          <span class="section-badge"><i class="fa-regular fa-heart"></i> HISTÓRIAS DE CRESCIMENTO</span>
+          <h2 class="section-title">Mudanças reais começam quando você encontra o <span>acolhimento certo.</span></h2>
+          <p class="testimonials-intro">Veja como outras pessoas encontraram mais equilíbrio emocional, clareza e leveza através da terapia.</p>
+        </div>
+        <div class="google-badge-summary" aria-label="Avaliação excelente no Google">
+          <div class="rating-score">5,0</div>
+          <div class="rating-copy">
+            <span class="badge-excellent">EXCELENTE</span>
+            <div class="badge-stars" aria-hidden="true">
+              <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+            </div>
+            <span class="badge-text">15 avaliações no <i class="fab fa-google"></i> Google</span>
           </div>
-          <span class="badge-text">Com base em 15 avaliações</span>
-          <span class="badge-source">Publicado em <i class="fab fa-google"></i> Google</span>
         </div>
       </div>
 
@@ -546,58 +580,14 @@
           <button class="carousel-dot" data-index="3" aria-label="Slide 4"></button>
           <button class="carousel-dot" data-index="4" aria-label="Slide 5"></button>
         </div>
+        <div class="testimonial-counter" aria-live="polite">
+          <span id="testimonialCurrent">01</span><span class="counter-line"></span><span>05</span>
+        </div>
       </div>
 
       <p class="ethics-disclaimer">
         Todos os depoimentos são verídicos e recebidos de clientes reais, com suas expressas autorizações por escrito, conforme Nota Técnica 01/2022 do Conselho Federal de Psicologia.
       </p>
-    </div>
-  </section>
-
-  <!-- About Me Section -->
-  <section class="section about-me-section" id="sobre">
-    <div class="container">
-      <div class="about-me-grid">
-        <div class="about-me-text" data-aos="fade-right">
-          <span class="section-badge">Sobre mim e como posso te ajudar</span>
-          <div class="badge crp-badge">CRP 05/55349</div>
-          
-          <h2 class="about-me-title">Olá, sou Messias Sousa</h2>
-          
-          <p class="about-me-paragraph">
-            Psicólogo clínico, com sólida experiência clínica dedicada ao cuidado emocional de adultos e adolescentes.
-          </p>
-          <p class="about-me-paragraph">
-            Minha trajetória é construída com base em formação consistente e atualização contínua: sou graduado pela UNESA-RJ, com especialização em Psicologia Hospitalar pela UFRJ e em Terapia Cognitivo-Comportamental (TCC) pelo Centro Universitário Celso Lisboa. Também possuo formação em TCC pelo CETCC-SP e sigo em constante aprimoramento com formação avançada em terapias cognitivas comportamentais de quarta geração.
-          </p>
-          <p class="about-me-paragraph font-bold">
-            Mas, mais do que títulos, meu compromisso é com aquilo que realmente faz diferença na sua vida: resultado.
-          </p>
-          <p class="about-me-paragraph">
-            Meu trabalho é focado em ajudar você a entender, de forma clara e prática, como sua mente funciona, identificando padrões de pensamento, emoções e comportamentos que hoje te sobrecarregam.
-          </p>
-          <p class="about-me-paragraph">
-            A partir disso, construímos juntos estratégias eficazes para que você consiga lidar melhor com ansiedade, estresse, desânimo e outros desafios emocionais, desenvolvendo mais equilíbrio, autonomia e segurança no seu dia a dia.
-          </p>
-          <p class="about-me-paragraph font-italic">
-            A terapia aqui não é apenas um espaço de fala, é um processo ativo, estruturado e direcionado para mudanças reais.
-          </p>
-          <p class="about-me-paragraph">
-            Os atendimentos são realizados de forma 100% online, com total sigilo, ética e a comodidade de você cuidar da sua saúde emocional de onde estiver, no Brasil ou no exterior.
-          </p>
-          <p class="about-me-paragraph font-highlight-blue">
-            Se você busca mais clareza mental, controle emocional e uma forma mais leve de viver, esse pode ser o começo de um novo caminho.
-          </p>
-          
-          <a href="https://wa.me/5521975891580?text=Olá! Gostaria de falar diretamente com o Psicólogo Messias Sousa." target="_blank" class="btn btn-whatsapp about-whatsapp-btn">
-            <i class="fab fa-whatsapp"></i> FALAR DIRETAMENTE COM MESSIAS
-          </a>
-        </div>
-
-        <div class="about-me-visual" data-aos="fade-left">
-          <img src="assets/about_image.jpg" alt="Psicólogo Messias Sousa" class="about-portrait-img">
-        </div>
-      </div>
     </div>
   </section>
 
@@ -697,9 +687,9 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <img src="assets/logo.png" alt="Psicólogo Messias Sousa" class="footer-logo">
+          <img src="assets/logo-oficial.png" alt="Psicólogo Messias Sousa" class="footer-logo">
           <p class="footer-description">
-            Se algo ainda não ficou claro, sinta-se à vontade para me enviar uma mensagem direta. O acolhimento começa desde o primeiro contato.
+            Se algo ainda não ficou claro, sinta-se à vontade para me enviar uma mensagem direta.<br> O acolhimento começa desde o primeiro contato.
           </p>
           <div class="footer-socials">
             <a href="https://instagram.com/messiaspsicologo" target="_blank" class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -711,7 +701,6 @@
           <h4>Navegação</h4>
           <ul class="footer-links">
             <li><a href="#inicio">Início</a></li>
-            <li><a href="#sobre">Sobre Mim</a></li>
             <li><a href="#servicos">Serviços</a></li>
             <li><a href="#depoimentos">Depoimentos</a></li>
             <li><a href="#faq">Dúvidas Frequentes</a></li>
@@ -764,6 +753,8 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- GSAP Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="js/aos.js"></script>
   <script src="js/script.js"></script>
   <script>
@@ -774,6 +765,13 @@
         offset: 100,
         easing: 'ease-out-quad'
       });
+
+      const refreshScrollAnimations = () => {
+        requestAnimationFrame(() => AOS.refreshHard());
+      };
+
+      window.addEventListener('load', refreshScrollAnimations, { once: true });
+      window.addEventListener('hashchange', refreshScrollAnimations);
     });
   </script>
 </body>
