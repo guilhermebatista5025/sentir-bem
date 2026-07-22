@@ -37,6 +37,8 @@ graph TD
 - **Persistência de Dados**: Sincroniza informações de clientes e agendamentos com o Supabase.
 
 ### 3. Painel Administrativo (`/admin`)
+
+Em produção, configure `ADMIN_USER` e `ADMIN_PASSWORD` no ambiente. Sem essas variáveis, o painel e as APIs administrativas ficam disponíveis somente por `localhost` em desenvolvimento; acessos remotos são bloqueados para proteger conversas e dados dos pacientes.
 - Um dashboard reservado para psicólogos acompanharem métricas de consultas realizadas, controle financeiro, histórico de conversas dos pacientes e status do servidor.
 
 ---

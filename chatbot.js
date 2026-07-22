@@ -21,6 +21,19 @@ const CONFIG_PATH = path.join(ROOT, "config", "bot.json");
 const SITE_PATH = ROOT;
 const ADMIN_PATH = path.join(ROOT, "admin");
 const MAX_MESSAGE_LENGTH = 1000;
+const DEFAULT_START_MESSAGES = ["oi", "olá", "ola", "menu", "início", "inicio", "bom dia", "boa tarde", "boa noite"];
+const DEFAULT_START_KEYWORDS = [
+  "ansiedade", "ansioso", "ansiosa", "crise de ansiedade", "pânico", "panico",
+  "dor no peito", "cansaço", "cansaco", "cansado", "cansada", "tristeza", "triste",
+  "depressão", "depressao", "estresse", "estressado", "estressada", "sobrecarregado",
+  "sobrecarregada", "insônia", "insonia", "não consigo dormir", "nao consigo dormir",
+  "medo", "angústia", "angustia", "desânimo", "desanimo", "solidão", "solidao", "luto",
+  "aperto no peito", "falta de ar", "emocional", "saúde mental", "saude mental", "terapia",
+  "psicólogo", "psicologo", "psicóloga", "psicologa", "chorando", "vontade de chorar",
+  "nervoso", "nervosa", "preocupado", "preocupada", "sem esperança", "baixa autoestima",
+  "trauma", "relacionamento", "término", "termino", "exausto", "exausta", "esgotado",
+  "esgotada", "burnout", "quero conversar", "preciso de ajuda", "não estou bem", "nao estou bem"
+];
 
 /* ========================================================================== 
    Configuração do assistente e estado em memória
@@ -36,6 +49,7 @@ function readConfig() {
 
 let botConfig = readConfig();
 const sessions = new Map();
+const humanTakeovers = new Set();
 const systemLogs = [];
 const sseClients = new Set();
 
@@ -123,12 +137,60 @@ async function listAppointments() {
   return data || [];
 }
 
+async function updateAppointmentStatus(id, status) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function clearAppointments() {
+  if (!supabase) return 0;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .delete()
+    .not("id", "is", null)
+    .select("id");
+  if (error) throw error;
+  return (data || []).length;
+}
+
 /* ========================================================================== 
    Normalização, segurança e utilitários de agenda
    ========================================================================== */
 
 function normalize(text = "") {
   return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function isStartMessage(text, configuredMessages = botConfig.mensagensInicio) {
+  const messages = Array.isArray(configuredMessages) ? configuredMessages : DEFAULT_START_MESSAGES;
+  const normalizedText = normalize(text);
+  return messages.some((message) => normalize(message) === normalizedText);
+}
+
+function normalizeSearchText(text) {
+  return normalize(text).replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function isStartKeywordMessage(text, configuredKeywords = botConfig.palavrasInicio) {
+  const keywords = Array.isArray(configuredKeywords) ? configuredKeywords : DEFAULT_START_KEYWORDS;
+  const searchableText = ` ${normalizeSearchText(text)} `;
+  return keywords.some((keyword) => {
+    const searchableKeyword = normalizeSearchText(keyword);
+    return searchableKeyword && searchableText.includes(` ${searchableKeyword} `);
+  });
+}
+
+function hasUrgentPhysicalSymptom(text) {
+  const value = ` ${normalizeSearchText(text)} `;
+  return ["dor no peito", "aperto no peito", "falta de ar", "desmaio"]
+    .some((symptom) => value.includes(` ${symptom} `));
 }
 
 function isCrisisMessage(text) {
@@ -221,6 +283,55 @@ async function sendMessage(to, text) {
   if (session) session.historico.push({ autor: "bot", texto: text, timestamp: new Date().toISOString() });
 }
 
+function requireWhatsAppConnection(res) {
+  if (!client || botStatus !== "CONECTADO") {
+    res.status(409).json({ error: "Conecte o WhatsApp para acessar as conversas." });
+    return false;
+  }
+  return true;
+}
+
+function parseChatId(value) {
+  const id = String(value || "").trim();
+  return /^[a-zA-Z0-9_.:-]{5,160}@(c\.us|lid)$/.test(id) ? id : null;
+}
+
+function messageTimestamp(timestamp) {
+  const value = Number(timestamp);
+  return Number.isFinite(value) && value > 0 ? new Date(value * 1000).toISOString() : new Date().toISOString();
+}
+
+function serializeWhatsAppMessage(message) {
+  return {
+    id: message.id?._serialized || "",
+    fromMe: Boolean(message.fromMe),
+    body: String(message.body || ""),
+    type: String(message.type || "chat"),
+    timestamp: messageTimestamp(message.timestamp),
+    hasMedia: Boolean(message.hasMedia),
+    mediaName: String(message._data?.filename || ""),
+    mediaType: String(message._data?.mimetype || ""),
+    ack: Number(message.ack ?? 0)
+  };
+}
+
+async function serializeWhatsAppChat(chat) {
+  let contact = null;
+  try { contact = await chat.getContact(); } catch { /* contato pode estar indisponível */ }
+  const id = chat.id?._serialized || "";
+  const last = chat.lastMessage ? serializeWhatsAppMessage(chat.lastMessage) : null;
+  return {
+    id,
+    name: String(chat.name || contact?.pushname || contact?.name || contact?.number || "Contato"),
+    phone: String(contact?.number || id.split("@")[0] || ""),
+    isBusiness: Boolean(contact?.isBusiness),
+    unreadCount: Number(chat.unreadCount || 0),
+    timestamp: messageTimestamp(chat.timestamp || chat.lastMessage?.timestamp),
+    lastMessage: last,
+    mode: humanTakeovers.has(id) ? "human" : "bot"
+  };
+}
+
 async function startConversation(msg) {
   let knownClient = null;
   try { knownClient = await findClient(msg.from); } catch (error) { addLog(error.message, "error"); }
@@ -238,6 +349,7 @@ async function startConversation(msg) {
 
 async function handleWhatsAppMessage(msg) {
   if (!msg.from || msg.from.endsWith("@g.us") || !msg.body) return;
+  if (botConfig.chatbotAtivo === false) return;
   const rawText = String(msg.body).trim().slice(0, MAX_MESSAGE_LENGTH);
   const text = normalize(rawText);
 
@@ -247,7 +359,11 @@ async function handleWhatsAppMessage(msg) {
     return;
   }
 
-  if (/^(oi|ola|olá|menu|inicio|início|bom dia|boa tarde|boa noite)$/.test(text) || !sessions.has(msg.from)) {
+  if (!sessions.has(msg.from)) {
+    if (!isStartMessage(rawText) && !isStartKeywordMessage(rawText)) return;
+    if (hasUrgentPhysicalSymptom(rawText)) {
+      await sendMessage(msg.from, "⚠️ Dor no peito de início súbito, falta de ar intensa ou desmaio podem ser uma urgência médica. Ligue para o SAMU 192 ou procure imediatamente um serviço de emergência. Este chatbot não consegue avaliar sintomas físicos nem descartar uma emergência.");
+    }
     await startConversation(msg);
     return;
   }
@@ -255,6 +371,12 @@ async function handleWhatsAppMessage(msg) {
   const session = sessions.get(msg.from);
   session.timestamp = new Date().toISOString();
   session.historico.push({ autor: "cliente", texto: rawText, timestamp: session.timestamp });
+
+  if (session.consentimento && (text === "menu" || text === "inicio")) {
+    session.etapa = "menu";
+    await sendMessage(msg.from, menuText(session.nome));
+    return;
+  }
 
   if (session.etapa === "consentimento") {
     if (text === "2" || text === "nao") {
@@ -404,7 +526,13 @@ function serviceMenu() {
    ========================================================================== */
 
 if (client) {
-  client.on("message", (msg) => handleWhatsAppMessage(msg).catch((error) => addLog(error.stack || error.message, "error")));
+  client.on("message", (msg) => {
+    if (humanTakeovers.has(msg.from)) {
+      addLog(`Nova mensagem recebida em atendimento humano: ${msg.from}.`);
+      return;
+    }
+    handleWhatsAppMessage(msg).catch((error) => addLog(error.stack || error.message, "error"));
+  });
   client.initialize().catch((error) => {
     botStatus = "ERRO";
     addLog(`Falha ao iniciar WhatsApp: ${error.message}`, "error");
@@ -464,11 +592,20 @@ function adminAuth(req, res, next) {
   next();
 }
 
+function protectAdmin(req, res, next) {
+  if (process.env.ADMIN_USER && process.env.ADMIN_PASSWORD) return adminAuth(req, res, next);
+  const address = req.socket.remoteAddress || "";
+  const localRequest = address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
+  if (process.env.NODE_ENV !== "production" && localRequest) return next();
+  return res.status(503).send("Painel administrativo protegido: configure ADMIN_USER e ADMIN_PASSWORD.");
+}
+
 /* ========================================================================== 
    Rotas de saúde e painel administrativo
    ========================================================================== */
 
 app.get("/api/health", (req, res) => res.json({ ok: true, whatsapp: botStatus, database: supabaseConfigured }));
+app.use(["/admin", "/api/admin"], protectAdmin);
 app.get("/admin", (req, res) => res.redirect(301, "/admin/"));
 app.get("/admin/", (req, res) => res.sendFile(path.join(ADMIN_PATH, "index.html")));
 app.use("/admin", express.static(ADMIN_PATH, { index: false, dotfiles: "deny" }));
@@ -476,10 +613,22 @@ app.use("/admin", express.static(ADMIN_PATH, { index: false, dotfiles: "deny" })
 app.get("/api/admin/status", (req, res) => res.json({ status: botStatus, qr: latestQrCode }));
 app.get("/api/admin/config", (req, res) => res.json(botConfig));
 app.post("/api/admin/config", (req, res) => {
-  const stringFields = ["nomeEmpresa", "nomeAssistente", "profissional", "crp", "mensagemFinal", "saudacaoAdicional", "endereco", "linkMapa", "horarioManha", "horarioTarde"];
+  const stringFields = ["nomeEmpresa", "nomeAssistente", "profissional", "crp", "mensagemInicial", "mensagemFinal", "saudacaoAdicional", "privacidade", "endereco", "linkMapa", "horarioManha", "horarioTarde"];
   const updates = Object.fromEntries(stringFields.filter((key) => typeof req.body[key] === "string").map((key) => [key, req.body[key].trim().slice(0, 500)]));
-  for (const key of ["formasPagamento", "todosServicos"]) {
+  for (const key of ["formasPagamento", "todosServicos", "periodos", "mensagensInicio", "palavrasInicio"]) {
     if (Array.isArray(req.body[key])) updates[key] = req.body[key].map((item) => String(item).trim().slice(0, 160)).filter(Boolean).slice(0, 100);
+  }
+  for (const key of ["chatbotAtivo", "respostaForaHorario", "lembreteAutomatico"]) {
+    if (typeof req.body[key] === "boolean") updates[key] = req.body[key];
+  }
+  if (Number.isInteger(req.body.diasParaExibir)) updates.diasParaExibir = Math.min(30, Math.max(1, req.body.diasParaExibir));
+  if (req.body.emergencia && typeof req.body.emergencia === "object") {
+    updates.emergencia = {
+      ...botConfig.emergencia,
+      ...Object.fromEntries(["samu", "cvv", "mensagem"]
+        .filter((key) => typeof req.body.emergencia[key] === "string")
+        .map((key) => [key, req.body.emergencia[key].trim().slice(0, 500)]))
+    };
   }
   if (Array.isArray(req.body.servicos)) {
     updates.servicos = req.body.servicos.map((item) => String(item).trim().slice(0, 160)).filter(Boolean).slice(0, 100);
@@ -493,8 +642,92 @@ app.post("/api/admin/config", (req, res) => {
   res.json({ success: true, message: "Configuração atualizada." });
 });
 app.get("/api/admin/sessions", (req, res) => res.json(Array.from(sessions.values())));
+app.get("/api/admin/conversations", async (req, res, next) => {
+  try {
+    if (!requireWhatsAppConnection(res)) return;
+    const chats = (await client.getChats())
+      .filter((chat) => parseChatId(chat.id?._serialized))
+      .sort((a, b) => Number(b.timestamp || b.lastMessage?.timestamp || 0) - Number(a.timestamp || a.lastMessage?.timestamp || 0))
+      .slice(0, 100);
+    const conversations = await Promise.all(chats.map(serializeWhatsAppChat));
+    res.json(conversations);
+  } catch (e) { next(e); }
+});
+app.get("/api/admin/conversations/:id/messages", async (req, res, next) => {
+  try {
+    if (!requireWhatsAppConnection(res)) return;
+    const chatId = parseChatId(req.params.id);
+    if (!chatId) return res.status(400).json({ error: "Conversa inválida." });
+    const limit = Math.min(150, Math.max(10, Number(req.query.limit) || 80));
+    const chat = await client.getChatById(chatId);
+    if (!chat) return res.status(404).json({ error: "Conversa não encontrada." });
+    const messages = await chat.fetchMessages({ limit });
+    res.json({ conversation: await serializeWhatsAppChat(chat), messages: messages.map(serializeWhatsAppMessage) });
+  } catch (e) { next(e); }
+});
+app.post("/api/admin/conversations/:id/messages", async (req, res, next) => {
+  try {
+    if (!requireWhatsAppConnection(res)) return;
+    const chatId = parseChatId(req.params.id);
+    const text = typeof req.body.text === "string" ? req.body.text.trim().slice(0, MAX_MESSAGE_LENGTH) : "";
+    if (!chatId || !text) return res.status(400).json({ error: "Conversa ou mensagem inválida." });
+    humanTakeovers.add(chatId);
+    const message = await client.sendMessage(chatId, text);
+    const session = sessions.get(chatId);
+    if (session) session.historico.push({ autor: "equipe", texto: text, timestamp: new Date().toISOString() });
+    addLog(`Mensagem enviada pela equipe para ${chatId}.`);
+    res.json({ success: true, message: serializeWhatsAppMessage(message), mode: "human" });
+  } catch (e) { next(e); }
+});
+app.post("/api/admin/conversations/:id/mode", async (req, res, next) => {
+  try {
+    if (!requireWhatsAppConnection(res)) return;
+    const chatId = parseChatId(req.params.id);
+    if (!chatId || !["human", "bot"].includes(req.body.mode)) return res.status(400).json({ error: "Modo de atendimento inválido." });
+    if (req.body.mode === "human") humanTakeovers.add(chatId);
+    else humanTakeovers.delete(chatId);
+    addLog(`${req.body.mode === "human" ? "Atendimento humano assumido" : "Conversa devolvida ao bot"}: ${chatId}.`);
+    res.json({ success: true, mode: req.body.mode });
+  } catch (e) { next(e); }
+});
+app.get("/api/admin/messages/media", async (req, res, next) => {
+  try {
+    if (!requireWhatsAppConnection(res)) return;
+    const messageId = String(req.query.id || "");
+    if (!/^[a-zA-Z0-9_@.:-]{10,300}$/.test(messageId)) return res.status(400).json({ error: "Anexo inválido." });
+    const message = await client.getMessageById(messageId);
+    if (!message || !message.hasMedia) return res.status(404).json({ error: "Anexo não encontrado." });
+    const media = await message.downloadMedia();
+    if (!media?.data) return res.status(410).json({ error: "Este anexo não está mais disponível no WhatsApp." });
+    const filename = String(media.filename || `anexo-${Date.now()}`)
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x20-\x7E]/g, "-").replace(/[\r\n"\\/]/g, "-").slice(0, 160);
+    const buffer = Buffer.from(media.data, "base64");
+    if (buffer.length > 25 * 1024 * 1024) return res.status(413).json({ error: "O anexo excede o limite de 25 MB do painel." });
+    res.setHeader("Content-Type", media.mimetype || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(buffer);
+  } catch (e) { next(e); }
+});
 app.get("/api/admin/clients", async (req, res, next) => { try { res.json(await listClients()); } catch (e) { next(e); } });
 app.get("/api/admin/appointments", async (req, res, next) => { try { res.json(await listAppointments()); } catch (e) { next(e); } });
+app.post("/api/admin/appointments/status", async (req, res, next) => {
+  try {
+    const allowed = ["Pendente", "Confirmado", "Concluído", "Cancelado"];
+    if (!req.body.id || !allowed.includes(req.body.status)) return res.status(400).json({ error: "Status inválido." });
+    const appointment = await updateAppointmentStatus(req.body.id, req.body.status);
+    if (supabase && !appointment) return res.status(404).json({ error: "Agendamento não encontrado." });
+    res.json({ success: true, appointment });
+  } catch (e) { next(e); }
+});
+app.post("/api/admin/appointments/clear", async (req, res, next) => {
+  try {
+    if (req.headers["x-confirm-action"] !== "CLEAR_APPOINTMENTS") return res.status(400).json({ error: "Confirmação explícita necessária." });
+    const removed = await clearAppointments();
+    res.json({ success: true, removed });
+  } catch (e) { next(e); }
+});
 app.post("/api/admin/clients/delete", async (req, res, next) => {
   try {
     if (req.headers["x-confirm-action"] !== "DELETE_CLIENT" || !req.body.phone) return res.status(400).json({ error: "Confirmação explícita necessária." });
@@ -510,6 +743,7 @@ app.post("/api/admin/logout", async (req, res, next) => {
   try {
     if (!client) return res.status(409).json({ success: false, message: "WhatsApp não está ativo." });
     await client.logout();
+    humanTakeovers.clear();
     botStatus = "DESCONECTADO";
     latestQrCode = null;
     res.json({ success: true, message: "WhatsApp desconectado." });
@@ -577,4 +811,4 @@ process.on("SIGTERM", shutdown);
    Exportações utilizadas pelos testes
    ========================================================================== */
 
-module.exports = { app, server, startServer, isCrisisMessage, normalize };
+module.exports = { app, server, startServer, isCrisisMessage, isStartKeywordMessage, isStartMessage, normalize };
