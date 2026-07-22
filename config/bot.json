@@ -1,0 +1,26 @@
+{
+  "nomeEmpresa": "Sentir Bem",
+  "nomeAssistente": "Assistente Sentir Bem",
+  "profissional": "Psicólogo Messias Sousa",
+  "crp": "CRP 05/55349",
+  "timezone": "America/Sao_Paulo",
+  "mensagemInicial": "Olá! Sou o Assistente Sentir Bem. Ofereço acolhimento inicial, informações e apoio para agendamento. Não realizo diagnóstico e não substituo psicoterapia ou atendimento de emergência.",
+  "mensagemFinal": "Sua solicitação foi registrada. A confirmação do horário será feita pela equipe.",
+  "servicos": [
+    "Primeira consulta psicológica online",
+    "Acompanhamento psicológico online",
+    "Informações sobre atendimento"
+  ],
+  "periodos": [
+    "Manhã",
+    "Tarde",
+    "Noite"
+  ],
+  "diasParaExibir": 6,
+  "privacidade": "Usaremos apenas os dados necessários para responder e organizar seu atendimento. Não envie senhas, documentos, dados bancários ou relatos clínicos detalhados pelo chatbot.",
+  "emergencia": {
+    "samu": "192",
+    "cvv": "188",
+    "mensagem": "Se houver risco imediato, tentativa de suicídio, ferimento ou perigo, ligue para o SAMU 192 ou vá ao pronto atendimento mais próximo. Para apoio emocional, o CVV atende gratuitamente pelo 188, 24 horas."
+  }
+}

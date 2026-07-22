@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sentir Bem - Visão Geral</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-background": "#101e1c",
+                "outline-variant": "#bec9c6",
+                "on-secondary-fixed": "#25005a",
+                "on-primary-fixed": "#00201d",
+                "on-secondary-fixed-variant": "#523787",
+                "inverse-primary": "#85d5cb",
+                "secondary": "#6a4fa1",
+                "on-secondary-container": "#503586",
+                "surface-variant": "#d6e6e2",
+                "secondary-container": "#c2a4fe",
+                "surface-container-highest": "#d6e6e2",
+                "on-primary-fixed-variant": "#00504a",
+                "surface-tint": "#046a62",
+                "on-tertiary-fixed": "#002113",
+                "secondary-fixed": "#eaddff",
+                "on-surface": "#101e1c",
+                "primary-fixed": "#a0f1e7",
+                "inverse-surface": "#253331",
+                "tertiary-container": "#007e56",
+                "surface-container-high": "#dbece8",
+                "on-primary": "#ffffff",
+                "on-tertiary-container": "#c4ffde",
+                "on-error": "#ffffff",
+                "on-tertiary-fixed-variant": "#005236",
+                "on-primary-container": "#b7fff5",
+                "surface": "#edfdf9",
+                "surface-bright": "#edfdf9",
+                "on-error-container": "#93000a",
+                "primary-container": "#237a72",
+                "tertiary": "#006342",
+                "background": "#edfdf9",
+                "surface-container": "#e1f1ee",
+                "error-container": "#ffdad6",
+                "tertiary-fixed": "#83f9c1",
+                "secondary-fixed-dim": "#d2bbff",
+                "outline": "#6e7977",
+                "inverse-on-surface": "#e4f4f0",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#85d5cb",
+                "on-secondary": "#ffffff",
+                "surface-dim": "#cdddda",
+                "surface-container-low": "#e7f7f3",
+                "on-surface-variant": "#3e4947",
+                "surface-container-lowest": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed-dim": "#66dca6",
+                "primary": "#006059"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "sidebar-width": "260px",
+                "stack-gap": "20px",
+                "card-padding": "24px",
+                "container-gap": "32px",
+                "header-height": "72px",
+                "inline-gap": "12px"
+            },
+            "fontFamily": {
+                "body-md": ["Inter"],
+                "auxiliary": ["Inter"],
+                "headline-md": ["Plus Jakarta Sans"],
+                "card-title": ["Plus Jakarta Sans"],
+                "body-lg": ["Inter"],
+                "headline-sm": ["Plus Jakarta Sans"],
+                "display-lg": ["Plus Jakarta Sans"],
+                "display-lg-mobile": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "auxiliary": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "card-title": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "display-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #F4F8F7;
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #bec9c6;
+            border-radius: 10px;
+        }
+        .ambient-shadow {
+            box-shadow: 0px 8px 28px rgba(25, 73, 68, 0.05);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- Side Navigation Bar -->
+<aside class="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">spa</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Sentir Bem</h1>
+<p class="text-[10px] text-on-surface-variant tracking-wider uppercase">Clinical Management</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto sidebar-scroll px-3 space-y-1">
+<!-- Active Tab: Visão Geral -->
+<a class="bg-primary-container/10 text-primary font-semibold border-l-4 border-primary px-3 py-2.5 flex items-center gap-3 rounded-r-lg transition-transform active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Visão Geral</span>
+</a>
+<!-- Other Tabs -->
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-body-md text-body-md">Agenda</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+<span class="font-body-md text-body-md">Atendimentos</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-body-md text-body-md">Conversas</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md text-body-md">Pacientes</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-body-md text-body-md">Prontuários</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md text-body-md">Financeiro</span>
+</a>
+<div class="pt-4 pb-2 px-3">
+<p class="text-[11px] font-bold text-outline uppercase tracking-widest">Ferramentas</p>
+</div>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span class="font-body-md text-body-md">Exercícios</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-body-md text-body-md">Chatbot</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-body-md text-body-md">Relatórios</span>
+</a>
+</nav>
+<div class="px-3 pt-6 border-t border-outline-variant mt-4">
+<a class="text-on-surface-variant hover:text-error hover:bg-error/5 px-3 py-2.5 flex items-center gap-3 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-body-md text-body-md">Sair</span>
+</a>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="h-header-height w-full sticky top-0 bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant/30 flex justify-between items-center px-container-gap ml-[260px] max-w-[calc(100%-260px)]">
+<div class="flex flex-col">
+<h2 class="font-headline-md text-headline-md text-primary">Visão Geral</h2>
+<p class="text-on-surface-variant text-body-md">Acompanhe seus atendimentos, pacientes e atividades importantes</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 bg-tertiary/10 text-tertiary px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[18px]" data-icon="wifi_tethering">wifi_tethering</span>
+<span class="text-auxiliary">WhatsApp Connected</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary-fixed ml-2">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a Brazilian psychologist in a bright, modern office. She has a warm, confident expression, wearing professional clinical attire. The background is softly blurred with hints of greenery and bookshelves, matching the tranquil green and lavender color palette of the clinical management system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNKcVIdaF9Nul_aoUZqEGxCjzop1xs0OpsSc_bi0YKur_N73My6S-VCiF6pRE20sLkpMClBoXUBGiJzWGc5JXU6ciHgYWYHyrHoDdCxYSoiq-PaFTkX-ju6ycP0RJ4fhkBmHiUgks8X1Z0rZbP5ZYyhbFtnPNy_bxXNe1ZQg2zco3N-WvF9Sa4mICY9N6tG2WkTu5lDts2IYSRWHErdRTbJ9PA-HMw-4zpJ73yBuSv9RuCc9KYCzI"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width p-container-gap bg-[#F4F8F7] min-h-[calc(100vh-72px)]">
+<!-- Metrics Section -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-container-gap">
+<!-- Metric Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-[18px] ambient-shadow flex items-start justify-between">
+<div>
+<p class="text-on-surface-variant text-body-md mb-1">Consultas de hoje</p>
+<h3 class="font-display-lg text-display-lg text-primary">6</h3>
+<p class="text-auxiliary text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="text-orange-500 font-bold">2</span> aguardando confirmação
+                    </p>
+</div>
+<div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-[18px] ambient-shadow flex items-start justify-between">
+<div>
+<p class="text-on-surface-variant text-body-md mb-1">Pacientes ativos</p>
+<h3 class="font-display-lg text-display-lg text-primary">48</h3>
+<p class="text-auxiliary text-tertiary flex items-center gap-1 mt-1">
+<span class="font-bold">+4</span> este mês
+                    </p>
+</div>
+<div class="w-12 h-12 bg-secondary/10 text-secondary rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+</div>
+</div>
+<!-- Metric Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-[18px] ambient-shadow flex items-start justify-between">
+<div>
+<p class="text-on-surface-variant text-body-md mb-1">Conversas pendentes</p>
+<h3 class="font-display-lg text-display-lg text-primary">8</h3>
+<p class="text-auxiliary text-error flex items-center gap-1 mt-1">
+<span class="font-bold">3</span> há +1h
+                    </p>
+</div>
+<div class="w-12 h-12 bg-tertiary/10 text-tertiary rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</div>
+</div>
+<!-- Metric Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-[18px] ambient-shadow flex items-start justify-between">
+<div>
+<p class="text-on-surface-variant text-body-md mb-1">Receita do mês</p>
+<h3 class="font-display-lg text-display-lg text-primary">R$ 8.450</h3>
+<p class="text-auxiliary text-tertiary flex items-center gap-1 mt-1">
+<span class="font-bold">+12%</span> em relação ao anterior
+                    </p>
+</div>
+<div class="w-12 h-12 bg-primary-container/20 text-primary-container rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+</div>
+</section>
+<!-- Content Grid Area -->
+<div class="grid grid-cols-12 gap-container-gap">
+<!-- Left Column (8/12) -->
+<div class="col-span-12 lg:col-span-8 space-y-container-gap">
+<!-- Weekly Schedule Card -->
+<div class="bg-surface-container-lowest rounded-[18px] ambient-shadow overflow-hidden">
+<div class="p-card-padding flex justify-between items-center border-b border-outline-variant/30">
+<h4 class="font-headline-sm text-headline-sm text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">analytics</span>
+                            Agenda da Semana
+                        </h4>
+<button class="text-primary text-body-md font-semibold hover:underline">Ver agenda completa</button>
+</div>
+<div class="p-card-padding">
+<!-- Custom Chart Visualization -->
+<div class="h-64 flex items-end justify-between gap-4 px-4 pt-4">
+<!-- Mon -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500" style="height: 65%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">SEG</span>
+</div>
+<!-- Tue -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500" style="height: 85%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">TER</span>
+</div>
+<!-- Wed -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500" style="height: 45%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">QUA</span>
+</div>
+<!-- Thu -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500" style="height: 95%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">QUI</span>
+</div>
+<!-- Fri -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500" style="height: 75%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">SEX</span>
+</div>
+<!-- Sat -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-primary-container/20 rounded-t-lg relative h-40">
+<div class="absolute bottom-0 left-0 right-0 bg-secondary rounded-t-lg transition-all duration-500" style="height: 30%;"></div>
+</div>
+<span class="text-auxiliary font-semibold text-on-surface-variant">SÁB</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Next Appointments Table -->
+<div class="bg-surface-container-lowest rounded-[18px] ambient-shadow overflow-hidden">
+<div class="p-card-padding border-b border-outline-variant/30">
+<h4 class="font-headline-sm text-headline-sm text-primary">Próximos atendimentos</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Horário</th>
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Paciente</th>
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Tipo</th>
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Modalidade</th>
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-auxiliary font-bold text-on-surface-variant uppercase tracking-wider">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-6 py-4 font-body-md font-semibold text-primary">09:00</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center text-[10px] font-bold">AS</div>
+<span class="font-body-md font-medium">Ana Souza</span>
+</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Terapia individual</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">On-line</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-[12px] font-bold">Confirmado</span>
+</td>
+<td class="px-6 py-4">
+<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-auxiliary font-bold hover:bg-primary/90 transition-all">Abrir</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-6 py-4 font-body-md font-semibold text-primary">10:30</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-primary flex items-center justify-center text-[10px] font-bold">RM</div>
+<span class="font-body-md font-medium">Ricardo Mello</span>
+</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Terapia de casal</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Presencial</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 text-[12px] font-bold">Pendente</span>
+</td>
+<td class="px-6 py-4">
+<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-auxiliary font-bold hover:bg-primary/90 transition-all">Abrir</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-6 py-4 font-body-md font-semibold text-primary">14:00</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center text-[10px] font-bold">LP</div>
+<span class="font-body-md font-medium">Luciana Pereira</span>
+</div>
+</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">Avaliação</td>
+<td class="px-6 py-4 font-body-md text-on-surface-variant">On-line</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-[12px] font-bold">Confirmado</span>
+</td>
+<td class="px-6 py-4">
+<button class="bg-primary text-white px-4 py-1.5 rounded-lg text-auxiliary font-bold hover:bg-primary/90 transition-all">Abrir</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column (4/12) -->
+<div class="col-span-12 lg:col-span-4 space-y-container-gap">
+<!-- Day Summary Card -->
+<div class="bg-surface-container-lowest p-card-padding rounded-[18px] ambient-shadow">
+<h4 class="font-headline-sm text-headline-sm text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">event_note</span>
+                        Resumo do dia
+                    </h4>
+<div class="space-y-4">
+<div class="flex justify-between items-center p-3 rounded-xl bg-surface-container-low/50">
+<span class="text-body-md text-on-surface-variant">Agendadas</span>
+<span class="font-bold text-primary">8</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-xl bg-surface-container-low/50 border-l-4 border-tertiary">
+<span class="text-body-md text-on-surface-variant">Confirmadas</span>
+<span class="font-bold text-tertiary">6</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-xl bg-surface-container-low/50 border-l-4 border-secondary">
+<span class="text-body-md text-on-surface-variant">Concluídas</span>
+<span class="font-bold text-secondary">3</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-xl bg-surface-container-low/50 border-l-4 border-error">
+<span class="text-body-md text-on-surface-variant">Canceladas</span>
+<span class="font-bold text-error">1</span>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant/30 flex justify-between items-center">
+<span class="font-headline-sm text-on-surface-variant">Faturamento</span>
+<span class="font-headline-sm text-primary">R$ 920,00</span>
+</div>
+</div>
+</div>
+<!-- Recent Chats Card -->
+<div class="bg-surface-container-lowest p-card-padding rounded-[18px] ambient-shadow">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-headline-sm text-headline-sm text-primary">Conversas recentes</h4>
+<span class="material-symbols-outlined text-tertiary">forum</span>
+</div>
+<div class="space-y-5">
+<div class="flex gap-4 group cursor-pointer">
+<div class="relative">
+<div class="w-12 h-12 rounded-full bg-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A photo of a cheerful client, Mariana Alves, for a therapist's messaging app. Soft, natural indoor lighting with a clean, minimal aesthetic. The style is modern, approachable, and warm, featuring soft teal accents to match the Sentir Bem brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9L9_RmuYp9euxc7GAV6U0LCWQ3qP031MOhhS3y-fydUW1BfJfNgcvwgpfUBmVQnkU3P1DpJ2Xv5G9aTyjMhNENbE7nZf_k3N6Id1iXRps-Zc3Y7CrG5GvCdlDwUDN5BSjsElm18S3jSos9ytF0a8-IpZkvqBu4ln0HvaGz_VGWUJz35kveHfV4TBAjegtIMuy10CJ-J2TU_PUQeglpn_L5lpUD_FkC-NuplFxQCGRJmt61MZCRec"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary border-2 border-white rounded-full"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-body-md truncate">Mariana Alves</h5>
+<span class="text-[10px] text-on-surface-variant">há 5 min</span>
+</div>
+<p class="text-auxiliary text-on-surface-variant truncate">Gostaria de alterar nosso horário...</p>
+</div>
+</div>
+<div class="flex gap-4 group cursor-pointer">
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-bold text-sm">JS</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-body-md truncate">João Santos</h5>
+<span class="text-[10px] text-on-surface-variant">há 12 min</span>
+</div>
+<p class="text-auxiliary text-on-surface-variant truncate">Obrigado pelo material enviado!</p>
+</div>
+</div>
+<div class="flex gap-4 group cursor-pointer">
+<div class="w-12 h-12 rounded-full bg-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of an elderly gentleman, Carlos Eduardo, a client in a healthcare context. The image is rendered in a soft, dignified style with gentle lighting and a serene atmosphere. Colors are muted teals and off-whites to align with the professional clinical UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEwNQfhoTSaNTVjOSTYIPpyMO73aNGoZzR9isub6iTcshFGzp2kY1G_yYjqO6zA7d1GGXyAjpiY4g0J585oZNjFY_AItr_ILTJ1RCeeNaRADQocOvE2I0EDSBmQKUAUcGeV6QLgl5UECKGObyFuO97UyrTTPa_5ip2knniYZ8nwkNiclYM8C32PjhEm4qEzeetvwWrHJnVQOrEBq_EIGEx9IFKnPSjMjmFm64c6o8TIU013RvaL6o"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<h5 class="font-bold text-body-md truncate">Carlos Eduardo</h5>
+<span class="text-[10px] text-on-surface-variant">há 45 min</span>
+</div>
+<p class="text-auxiliary text-on-surface-variant truncate">Confirmado para amanhã, até logo.</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-primary text-primary rounded-xl font-bold text-auxiliary hover:bg-primary/5 transition-colors">Ver todas</button>
+</div>
+<!-- Pending Items Card -->
+<div class="bg-surface-container-lowest p-card-padding rounded-[18px] ambient-shadow">
+<h4 class="font-headline-sm text-headline-sm text-primary mb-4">Pendências</h4>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-3 bg-error/5 text-error rounded-xl">
+<span class="material-symbols-outlined text-[20px]">assignment_late</span>
+<span class="text-body-md font-medium">3 prontuários para finalizar</span>
+</div>
+<div class="flex items-center gap-3 p-3 bg-orange-500/5 text-orange-600 rounded-xl">
+<span class="material-symbols-outlined text-[20px]">pending_actions</span>
+<span class="text-body-md font-medium">2 pagamentos em atraso</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center ambient-shadow hover:scale-105 transition-transform active:scale-95 group z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+<div class="absolute right-full mr-4 bg-primary text-white px-4 py-2 rounded-xl text-body-md font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+            Novo Agendamento
+        </div>
+</button>
+<script>
+        // Simple interaction for sidebar hover states
+        document.querySelectorAll('aside nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if(!this.classList.contains('border-primary')) {
+                    // This is just a UI demo, don't prevent navigation normally
+                }
+            });
+        });
+
+        // Atmosphere Micro-interactions
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('shadow-md');
+            } else {
+                header.classList.remove('shadow-md');
+            }
+        });
+    </script>
+</body></html>

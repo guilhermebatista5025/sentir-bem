@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Chatbot | Sentir Bem</title>
+  <!-- Tipografia do design system Sentir Bem -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2.0.0">
+  <link rel="icon" type="image/png" href="/assets/identidade/logo-oficial.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+
+  <!-- CONTAINER PRINCIPAL -->
+  <div class="app-container">
+    
+    <!-- SIDEBAR DE NAVEGAÇÃO -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand-mark">
+          <img src="/assets/identidade/logo-oficial.png" alt="" class="sidebar-logo">
+        </div>
+        <div class="sidebar-brand-copy">
+          <strong>Sentir Bem</strong>
+          <span>Clinical Management</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-target="section-overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span>Visão Geral</span>
+        </button>
+        <button class="menu-item" data-target="section-calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Agenda</span>
+          <span class="badge" id="calendar-badge" style="background-color: var(--primary); box-shadow: 0 2px 6px var(--primary-glow);">0</span>
+        </button>
+        <button class="menu-item" data-target="section-completed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Atendimentos</span>
+          <span class="badge" id="completed-badge" style="background-color: var(--success); box-shadow: 0 2px 6px var(--success-glow);">0</span>
+        </button>
+        <button class="menu-item" data-target="section-ready">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
+          <span>Conversas</span>
+          <span class="badge" id="ready-badge" style="background-color: var(--warning); box-shadow: 0 2px 6px var(--warning-glow);">0</span>
+        </button>
+        <button class="menu-item" data-target="section-sessions">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Conversas ativas</span>
+          <span class="badge" id="sessions-badge">0</span>
+        </button>
+        <button class="menu-item" data-target="section-clients">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span>Pacientes</span>
+          <span class="badge" id="clients-badge" style="background-color: var(--success); box-shadow: 0 2px 6px var(--success-glow);">0</span>
+        </button>
+        <button class="menu-item" data-target="section-connection">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path><path d="M12 2a15.3 15.3 0 0 1 4 10"></path><path d="M12 6a10.3 10.3 0 0 1 2 6"></path></svg>
+          <span>WhatsApp</span>
+        </button>
+        <button class="menu-item" data-target="section-config">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Chatbot</span>
+        </button>
+        <button class="menu-item" data-target="section-logs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 16 17 22 11"></polyline><polyline points="12 4 22 4 22 14"></polyline></svg>
+          <span>Relatórios</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="developer-info">
+          <p>Desenvolvido por</p>
+         <a href="https://www.instagram.com/guilherme_dev_web_ofc/"><h4>Guilherme B.</h4></a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+    <main class="main-content">
+      
+      <!-- TOPO / CABEÇALHO -->
+      <header class="main-header">
+        <div class="header-title">
+          <h1 id="page-title">Visão Geral</h1>
+          <p id="page-subtitle">Acompanhe seus atendimentos, pacientes e atividades importantes</p>
+        </div>
+
+        <div class="header-status">
+          <div class="status-indicator">
+            <span class="status-dot pulsing" id="status-dot"></span>
+            <span class="status-text" id="status-text">Verificando...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTEÚDO DINÂMICO POR SEÇÕES -->
+      <div class="content-wrapper">
+
+        <!-- =====================================
+             SEÇÃO: VISÃO GERAL (OVERVIEW)
+             ===================================== -->
+        <section id="section-overview" class="tab-content active">
+          
+          <!-- CARDS DE MÉTRICAS -->
+          <div class="metrics-grid prototype-metrics">
+            <div class="metric-card clickable-metric-card" data-target="section-completed">
+              <div class="metric-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              </div>
+              <div class="metric-info">
+                <h3>Consultas de hoje</h3>
+                <p id="metric-total-bookings-count">0 Confirmados</p>
+              </div>
+            </div>
+            
+            <div class="metric-card clickable-metric-card" data-target="section-sessions">
+              <div class="metric-icon green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              </div>
+              <div class="metric-info">
+                <h3>Conversas pendentes</h3>
+                <p id="metric-active-sessions">0 Clientes</p>
+              </div>
+            </div>
+
+            <div class="metric-card clickable-metric-card" data-target="section-clients">
+              <div class="metric-icon purple">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              </div>
+              <div class="metric-info">
+                <h3>Pacientes ativos</h3>
+                <p id="metric-total-clients">0 Clientes</p>
+              </div>
+            </div>
+            <div class="metric-card clickable-metric-card" data-target="section-completed">
+              <div class="metric-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 9h.01M18 15h.01"></path></svg>
+              </div>
+              <div class="metric-info"><h3>Receita do mês</h3><p id="overview-revenue">R$ 0,00</p></div>
+            </div>
+          </div>
+
+          <!-- PAINEL DE GRÁFICOS E MÉTRICAS EM TEMPO REAL -->
+          <div class="analytics-grid prototype-dashboard-grid">
+            
+            <!-- CARD DO GRÁFICO DE SERVIÇOS AGENDADOS -->
+            <div class="analytics-card chart-card">
+              <div class="card-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+                <h3>Agenda da Semana</h3>
+              </div>
+              <div class="chart-container">
+                <canvas id="services-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- CARD DE METRICAS E RESUMO DA SEMANA -->
+            <div class="analytics-card summary-card">
+              <div class="card-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <h3>Resumo do dia</h3>
+              </div>
+              <div class="weekly-metrics-list">
+                
+                <div class="weekly-metric-item">
+                  <div class="metric-label">
+                    <span class="dot green"></span>
+                    <span>Pedidos Agendados (Geral)</span>
+                  </div>
+                  <strong id="metric-total-orders">0</strong>
+                </div>
+
+                <div class="weekly-metric-item">
+                  <div class="metric-label">
+                    <span class="dot blue"></span>
+                    <span>Agendamentos da Semana</span>
+                  </div>
+                  <strong id="metric-week-orders">0</strong>
+                </div>
+
+                <div class="weekly-metric-item">
+                  <div class="metric-label">
+                    <span class="dot purple"></span>
+                    <span>Serviços Concluídos e Pagos</span>
+                  </div>
+                  <strong id="metric-paid-orders">0</strong>
+                </div>
+
+                <div class="weekly-metric-item">
+                  <div class="metric-label">
+                    <span class="dot gold"></span>
+                    <span>Faturamento Estimado</span>
+                  </div>
+                  <strong id="metric-estimated-revenue">R$ 0,00</strong>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: CONEXÃO WHATSAPP (CONNECTION)
+             ===================================== -->
+        <section id="section-connection" class="tab-content">
+          
+          <div class="status-center-card">
+            
+            <!-- CASO 1: DESCONECTADO OU AGUARDANDO QR -->
+            <div id="tab-qr-container" class="status-display-wrapper hidden">
+              <div class="qr-content">
+                <div class="qr-instructions">
+                  <h2>Vincular Novo Aparelho</h2>
+                  <p>Escaneie o QR Code abaixo com a câmera do seu celular pelo aplicativo do WhatsApp para iniciar o robô inteligente.</p>
+                  
+                  <div class="instruction-steps">
+                    <div class="step"><span>1</span> Abra o WhatsApp</div>
+                    <div class="step"><span>2</span> Vá em Aparelhos Conectados</div>
+                    <div class="step"><span>3</span> Toque em Conectar Aparelho</div>
+                    <div class="step"><span>4</span> Aponte a câmera para esta tela</div>
+                  </div>
+                </div>
+                
+                <div class="qr-view-box">
+                  <div class="qr-spinner" id="tab-qr-spinner">
+                    <div class="spinner"></div>
+                    <span>Gerando QR Code...</span>
+                  </div>
+                  <div id="tab-qr-code-graphic" class="qr-graphic"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CASO 2: CONECTADO COM SUCESSO -->
+            <div id="tab-connected-container" class="status-display-wrapper hidden">
+              <div class="success-banner">
+                <div class="success-ring">
+                  <div class="success-ring-glow"></div>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="checkmark-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <h2>Conectado à Rede WhatsApp</h2>
+                <p>O chatbot está sincronizado e operando em segundo plano. Ele responderá a novos contatos de forma 100% automatizada.</p>
+                
+                <div class="session-info-pill" id="tab-session-user-details" style="margin-bottom: 24px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <span id="tab-connected-phone-number">Linha ativa de atendimento</span>
+                </div>
+
+                <div class="disconnect-action-row" style="margin-top: 16px;">
+                  <button type="button" id="btn-logout-whatsapp" class="btn-secondary danger" style="padding: 12px 24px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                    Desconectar Esta Conta (Logout)
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: CONFIGURAÇÕES DO CHATBOT (SETTINGS)
+             ===================================== -->
+        <section id="section-config" class="tab-content">
+          
+          <form id="bot-config-form" class="config-form">
+            
+            <div class="config-grid">
+              
+              <!-- CARD: METADADOS DA EMPRESA -->
+              <div class="form-card">
+                <div class="card-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                  <h3>Identidade & Saudações</h3>
+                </div>
+                
+                <div class="form-group">
+                  <label for="input-nome-empresa">Nome da Empresa</label>
+                  <input type="text" id="input-nome-empresa" required placeholder="Ex: Auto Sport Estética Automotiva">
+                  <span class="help-text">Exibido em negrito no topo da mensagem de boas-vindas.</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-saudacao">Subsaudação / Instrução inicial</label>
+                  <textarea id="input-saudacao" rows="3" required placeholder="Como podemos ajudar você hoje?"></textarea>
+                  <span class="help-text">Instrução logo antes das opções numéricas do menu inicial.</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-msg-final">Mensagem Final de Sucesso</label>
+                  <textarea id="input-msg-final" rows="3" required placeholder="Nossa equipe entrará em contato em instantes."></textarea>
+                  <span class="help-text">Enviada ao cliente logo após ele finalizar o fluxo de agendamento.</span>
+                </div>
+
+                <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div class="form-group">
+                    <label for="input-horario-manha">Horário do Turno Manhã</label>
+                    <input type="text" id="input-horario-manha" required placeholder="Ex: 08:00 às 12:00">
+                    <span class="help-text">Horário exibido no turno da manhã.</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="input-horario-tarde">Horário do Turno Tarde</label>
+                    <input type="text" id="input-horario-tarde" required placeholder="Ex: 13:00 às 17:00">
+                    <span class="help-text">Horário exibido no turno da tarde.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CARD: LOCALIZAÇÃO & CONTATO -->
+              <div class="form-card">
+                <div class="card-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <h3>Localização & Contato</h3>
+                </div>
+                
+                <div class="form-group">
+                  <label for="input-endereco">Endereço Físico</label>
+                  <input type="text" id="input-endereco" required placeholder="Rua Exemplo, 123 - Centro">
+                  <span class="help-text">Enviado quando o usuário escolhe a opção 4️⃣ (Localização).</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="input-link-mapa">Link do Google Maps</label>
+                  <input type="url" id="input-link-mapa" required placeholder="https://maps.google.com">
+                  <span class="help-text">URL curta ou rota direta para facilitar o GPS do cliente.</span>
+                </div>
+                
+                <div class="form-group">
+                  <label>Formas de Pagamento Aceitas</label>
+                  <div id="payment-chips-container" class="chips-container">
+                    <!-- Gerado dinamicamente -->
+                  </div>
+                  <div class="add-chip-row">
+                    <input type="text" id="input-new-payment" placeholder="Nova forma de pagamento...">
+                    <button type="button" id="btn-add-payment" class="btn-secondary">Adicionar</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CARD: SERVIÇOS AGENDÁVEIS (FUNIL) -->
+              <div class="form-card full-width">
+                <div class="card-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <h3>Serviços Disponíveis para Agendamento</h3>
+                </div>
+                
+                <div class="services-edit-table-wrapper">
+                  <table class="premium-table" id="services-table">
+                    <thead>
+                      <tr>
+                        <th width="80">Atalho (ID)</th>
+                        <th>Nome do Serviço</th>
+                        <th width="100" class="actions-col">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="services-tbody">
+                      <!-- Renderizado dinamicamente -->
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div class="add-service-form-row">
+                  <input type="text" id="new-service-id" placeholder="ID (ex: 6)" style="max-width: 80px;">
+                  <input type="text" id="new-service-name" placeholder="Nome do Serviço (ex: Vitrificação de Plásticos)">
+                  <button type="button" id="btn-add-service" class="btn-secondary">Adicionar Serviço</button>
+                </div>
+              </div>
+
+              <!-- CARD: LISTAGEM GERAL DE OUTROS SERVIÇOS -->
+              <div class="form-card full-width">
+                <div class="card-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                  <h3>Listagem Geral de Todos os Serviços do Portfólio</h3>
+                </div>
+                <div class="form-group">
+                  <span class="help-text">Exibida quando o usuário clica em 2️⃣ Ver Serviços. Edite a listagem adicionando chips rápidos.</span>
+                  <div id="general-services-chips" class="chips-container style-grid">
+                    <!-- Gerado dinamicamente -->
+                  </div>
+                  <div class="add-chip-row">
+                    <input type="text" id="input-new-general-service" placeholder="Adicionar outro serviço do portfólio...">
+                    <button type="button" id="btn-add-general-service" class="btn-secondary">Adicionar</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="form-actions-bar">
+              <button type="submit" class="btn-primary glow-button" id="btn-save-config">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span>Salvar Todas as Configurações</span>
+              </button>
+            </div>
+
+          </form>
+
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: MONITOR DE SESSÕES ATIVAS
+             ===================================== -->
+        <section id="section-sessions" class="tab-content">
+
+          <div class="sessions-table-wrapper card-container" style="margin-bottom: 40px;">
+            <table class="premium-table" id="sessions-table">
+              <thead>
+                <tr>
+                  <th>WhatsApp (Contato)</th>
+                  <th>Etapa Atual</th>
+                  <th>Serviço Escolhido</th>
+                  <th>Veículo</th>
+                  <th>Última Interação</th>
+                  <th width="150" class="actions-col">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-tbody">
+                <tr>
+                  <td colspan="6" class="table-empty">Nenhum cliente ativo no funil neste momento.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: AGENDAMENTOS CONCLUÍDOS (CARDS)
+             ===================================== -->
+        <section id="section-completed" class="tab-content">
+          
+          <div class="sessions-header-actions" style="justify-content: flex-end; margin-bottom: 24px;">
+            <button class="btn-secondary danger" id="btn-clear-appointments" style="padding: 8px 16px; font-size: 0.78rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Limpar Histórico</span>
+            </button>
+          </div>
+
+          <div class="completed-cards-grid" id="completed-cards-container">
+            <div class="completed-empty-state">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <p>Nenhum agendamento concluído recentemente.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: PRONTOS PARA ENTREGA (READY)
+             ===================================== -->
+        <section id="section-ready" class="tab-content">
+          <div class="completed-cards-grid" id="ready-cards-container">
+            <div class="completed-empty-state">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <p>Nenhum veículo aguardando retirada ou pronto para entrega.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: CLIENTES CADASTRADOS (CRM)
+             ===================================== -->
+        <section id="section-clients" class="tab-content">
+
+          <div class="sessions-table-wrapper card-container">
+            <table class="premium-table" id="clients-table">
+              <thead>
+                <tr>
+                  <th>Nome do Cliente</th>
+                  <th>WhatsApp (Contato)</th>
+                  <th>CPF</th>
+                  <th>Veículos</th>
+                  <th>Data de Cadastro</th>
+                  <th width="150" class="actions-col">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clients-tbody">
+                <tr>
+                  <td colspan="6" class="table-empty">Nenhum cliente cadastrado no momento.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: CALENDÁRIO DE AGENDAMENTOS
+             ===================================== -->
+        <section id="section-calendar" class="tab-content">
+
+          <div class="calendar-layout-grid">
+            
+            <!-- COLUNA ESQUERDA: O CALENDÁRIO -->
+            <div class="calendar-card card-container">
+              <div class="calendar-nav-header">
+                <button type="button" class="btn-icon" id="btn-prev-month">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <h3 id="calendar-month-year">Carregando...</h3>
+                <button type="button" class="btn-icon" id="btn-next-month">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+              
+              <div class="calendar-grid-weekdays">
+                <div>Dom</div>
+                <div>Seg</div>
+                <div>Ter</div>
+                <div>Qua</div>
+                <div>Qui</div>
+                <div>Sex</div>
+                <div>Sáb</div>
+              </div>
+              
+              <div class="calendar-grid-days" id="calendar-days-container">
+                <!-- Gerado dinamicamente via JS -->
+              </div>
+            </div>
+            
+            <!-- COLUNA DIREITA: COMPROMISSOS DO DIA SELECIONADO -->
+            <div class="calendar-details-card card-container">
+              <div class="details-header-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <h3 id="selected-day-title">Serviços do Dia</h3>
+              </div>
+              
+              <!-- FILTRO DE SERVIÇOS DO DIA -->
+              <div class="calendar-filter-row" id="calendar-service-filter-container" style="display: none;">
+                <!-- Gerado dinamicamente -->
+              </div>
+              
+              <div class="day-appointments-list" id="day-appointments-container">
+                <!-- Gerado dinamicamente -->
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- =====================================
+             SEÇÃO: CONSOLE DE LOGS
+             ===================================== -->
+        <section id="section-logs" class="tab-content">
+          
+          <div class="logs-header-actions" style="justify-content: flex-end; margin-bottom: 24px;">
+            <button class="btn-secondary danger" id="btn-clear-logs">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              <span>Limpar Console</span>
+            </button>
+          </div>
+
+          <!-- TERMINAL VIRTUAL -->
+          <div class="terminal-container">
+            <div class="terminal-bar">
+              <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <div class="terminal-title">bash - node chatbot.js - stream</div>
+            </div>
+            <div class="terminal-body" id="terminal-output">
+              <!-- Logs dinâmicos vão entrar aqui -->
+              <div class="log-line system">⚡ Conectando ao fluxo de logs em tempo real...</div>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- MODAL DE DETALHES DO CLIENTE / TRANSCRIÇÃO CHAT -->
+  <div id="details-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <h3 id="modal-client-name">Nome do Cliente</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Detalhes Consolidados -->
+        <div class="consolidated-details-grid">
+          <div class="detail-item">
+            <span>WhatsApp</span>
+            <strong id="modal-detail-phone">+55 (00) 00000-0000</strong>
+          </div>
+          <div class="detail-item">
+            <span>Etapa Atual</span>
+            <strong id="modal-detail-stage">Menu Inicial</strong>
+          </div>
+          <div class="detail-item">
+            <span>Serviço Escolhido</span>
+            <strong id="modal-detail-service">Aguardando...</strong>
+          </div>
+          <div class="detail-item">
+            <span>Tipo de Veículo</span>
+            <strong id="modal-detail-vehicle">Aguardando...</strong>
+          </div>
+          <div class="detail-item" id="modal-detail-payment-row" style="grid-column: span 2; display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 5px;">
+            <span>Forma de Pagamento</span>
+            <strong id="modal-detail-payment">Aguardando...</strong>
+          </div>
+          <div class="detail-item" id="modal-detail-obs-row" style="grid-column: span 2; display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 5px;">
+            <span>Observações do Veículo</span>
+            <strong id="modal-detail-obs">Nenhuma</strong>
+          </div>
+        </div>
+        
+        <!-- Histórico de Conversa (Timeline) -->
+        <h4 class="timeline-title">Transcrição da Conversa em Tempo Real</h4>
+        <div class="chat-timeline" id="modal-chat-timeline">
+          <!-- Gerado dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALHES DE VEÍCULOS (CRM) -->
+  <div id="vehicles-modal" class="modal-backdrop hidden">
+    <div class="modal-card vehicles-modal-box">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"></path><path d="M1 21h22"></path><path d="M8 7h4"></path><path d="M8 11h4"></path><path d="M8 15h4"></path></svg>
+          <h3 id="modal-vehicles-client-name">Veículos do Cliente</h3>
+        </div>
+        <button id="btn-close-vehicles-modal" class="modal-close-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="vehicles-list-grid" id="modal-vehicles-list">
+          <!-- Gerado dinamicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE NOTIFICAÇÃO -->
+  <div id="toast" class="toast hidden">
+    <div class="toast-content">
+      <span class="toast-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 8 12 12 16 14"></polyline></svg>
+      </span>
+      <p id="toast-message">Configuração salva com sucesso!</p>
+    </div>
+  </div>
+
+  <!-- Biblioteca qrcode-generator para desenhar o QR code direto no Canvas via Javascript (cdnjs) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

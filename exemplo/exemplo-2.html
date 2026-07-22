@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Conversas | Sentir Bem</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#101e1c",
+                        "outline-variant": "#bec9c6",
+                        "on-secondary-fixed": "#25005a",
+                        "on-primary-fixed": "#00201d",
+                        "on-secondary-fixed-variant": "#523787",
+                        "inverse-primary": "#85d5cb",
+                        "secondary": "#6a4fa1",
+                        "on-secondary-container": "#503586",
+                        "surface-variant": "#d6e6e2",
+                        "secondary-container": "#c2a4fe",
+                        "surface-container-highest": "#d6e6e2",
+                        "on-primary-fixed-variant": "#00504a",
+                        "surface-tint": "#046a62",
+                        "on-tertiary-fixed": "#002113",
+                        "secondary-fixed": "#eaddff",
+                        "on-surface": "#101e1c",
+                        "primary-fixed": "#a0f1e7",
+                        "inverse-surface": "#253331",
+                        "tertiary-container": "#007e56",
+                        "surface-container-high": "#dbece8",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#c4ffde",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-primary-container": "#b7fff5",
+                        "surface": "#edfdf9",
+                        "surface-bright": "#edfdf9",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#237a72",
+                        "tertiary": "#006342",
+                        "background": "#edfdf9",
+                        "surface-container": "#e1f1ee",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#83f9c1",
+                        "secondary-fixed-dim": "#d2bbff",
+                        "outline": "#6e7977",
+                        "inverse-on-surface": "#e4f4f0",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#85d5cb",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#cdddda",
+                        "surface-container-low": "#e7f7f3",
+                        "on-surface-variant": "#3e4947",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#66dca6",
+                        "primary": "#006059"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "stack-gap": "20px",
+                        "card-padding": "24px",
+                        "container-gap": "32px",
+                        "header-height": "72px",
+                        "inline-gap": "12px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "auxiliary": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "card-title": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "auxiliary": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "card-title": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f4f8f7;
+            font-family: 'Inter', sans-serif;
+            color: #101e1c;
+        }
+        .chat-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #bec9c6;
+            border-radius: 10px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #dde7e5;
+        }
+        .ambient-shadow {
+            box-shadow: 0px 8px 28px rgba(25, 73, 68, 0.05);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-sm font-bold text-primary leading-tight">Sentir Bem</h1>
+<p class="text-auxiliary text-outline">Clinical Management</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto px-3 space-y-1 chat-scroll">
+<!-- Navigation Items Mapping -->
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Visão Geral</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-body-md text-body-md">Agenda</span>
+</a>
+<a class="bg-primary-container text-primary font-semibold border-l-4 border-primary px-3 py-2 flex items-center gap-inline-gap rounded-r-lg" href="#">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-body-md text-body-md">Conversas</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md">Pacientes</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-body-md text-body-md">Prontuários</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-body-md text-body-md">Chatbot</span>
+</a>
+<div class="pt-4 pb-2 px-3">
+<p class="text-[10px] font-bold uppercase tracking-wider text-outline">Administrativo</p>
+</div>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md text-body-md">Financeiro</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary px-3 py-2 flex items-center gap-inline-gap hover:bg-surface-container-low transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Configurações</span>
+</a>
+</nav>
+<div class="px-3 mt-auto pt-6 border-t border-outline-variant">
+<button class="w-full text-on-surface-variant hover:text-error px-3 py-2 flex items-center gap-inline-gap hover:bg-red-50 transition-colors duration-200 rounded-lg">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md text-body-md">Sair</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Top Navigation -->
+<header class="h-header-height w-full bg-surface border-b border-outline-variant flex justify-between items-center px-container-gap z-40 shadow-sm">
+<div class="flex items-center gap-4">
+<span class="font-headline-sm text-headline-sm font-bold text-primary">Conversas</span>
+<div class="h-6 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-2 text-primary font-body-md bg-primary/10 px-3 py-1 rounded-full">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+<span>WhatsApp Conectado</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:text-primary transition-colors"><span class="material-symbols-outlined">help</span></button>
+</div>
+<div class="flex items-center gap-3 pl-6 border-l border-outline-variant">
+<div class="text-right">
+<p class="font-body-md font-semibold">Dr. Ricardo Silva</p>
+<p class="text-auxiliary text-outline">Psicólogo Clínico</p>
+</div>
+<img class="w-10 h-10 rounded-full border-2 border-primary-container object-cover" data-alt="A professional headshot of a smiling male psychologist in a modern office. He is wearing a clean white shirt and dark glasses. The background is a soft-focus clinical setting with warm, ambient lighting and minimalist decor, emphasizing a calm and professional atmosphere in line with the high-end medical UI design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0RaL9CszeoU9bomV5WQUBCjOJXPQfL8eMBkROUL5dI1iSqZ9om8I5QV958zyBKhmGZOS25YuV7s1RgNogQRuTnZQtIqEzJBcKpjvjeuAA32rwmTJuy91ScZpzLNKJh3zHbytofl38E8Z3MRaN1YABFcxjWtZN5xD2p6mucITC668vsr5lmHF-Dd2e-R7c5fxZDI2LNBECuV35r0mQqEJr7vhOMVtg07-rzPatMWS9-P2HWpsFxck"/>
+</div>
+</div>
+</header>
+<!-- Conversas Container (3 Columns) -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Column 1: Conversations List -->
+<section class="w-80 flex flex-col bg-white border-r border-outline-variant">
+<div class="p-4 space-y-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Buscar paciente..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-1 chat-scroll">
+<button class="whitespace-nowrap px-3 py-1.5 rounded-full bg-primary text-white text-auxiliary font-semibold">Todas</button>
+<button class="whitespace-nowrap px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant text-auxiliary hover:bg-surface-variant transition-colors">Não respondidas</button>
+<button class="whitespace-nowrap px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant text-auxiliary hover:bg-surface-variant transition-colors">Pacientes</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto chat-scroll">
+<!-- Active Conversation -->
+<div class="px-4 py-3 bg-primary/5 border-l-4 border-primary flex gap-3 cursor-pointer">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A soft and warm portrait of a young woman named Mariana, smiling gently. The photography style is modern with soft natural light, highlighting her friendly and approachable personality. The background is a blurred minimalist interior with hints of organic textures like wood and fabric, maintaining a serene clinical aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJ2v64qdos7ieCvb7JjoytL1K6zZp4kPJWi1TvhToKf-8e8oRrWHIGYFAR1fwNpfhvZG3d8qtwBFPi-GMzaJipd6h3POFxhi3TdMIRZFrkBzG_RS9RRND1xgr4I2MzSfgTt-XW7EdxuXsRHUvVQNs-fmt5ycFjdeNhZnVldsi43f9yKsIEhQeSp4rUauFs0v_uGeg1wQxv03wpuFKp_FUP0ju4W5aDmi28ulCocK-kUEssyU36P5E"/>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="font-semibold text-body-md truncate">Mariana Alves</h3>
+<span class="text-[11px] text-outline">10:45</span>
+</div>
+<p class="text-auxiliary text-outline truncate mb-1">Doutor, acabei de fazer o exercício...</p>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded-md bg-[#25A675]/10 text-[#25A675] text-[10px] font-bold">Paciente</span>
+<span class="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold ml-auto">2</span>
+</div>
+</div>
+</div>
+<!-- Other Conversations -->
+<div class="px-4 py-3 hover:bg-surface-container-low transition-colors flex gap-3 cursor-pointer">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="Close-up portrait of a middle-aged man with a thoughtful expression. He has short hair and subtle wrinkles around his eyes, suggesting wisdom and maturity. The lighting is soft and directional, creating a calm, high-end professional look. Neutral color palette of whites and soft greys in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEgS1Tcna6Qiy4E90d2_YysPOozYnS5mJ3dHaaFGvXYHBCo6HTj_n6tP3i8BAEbdy-fCYfy0RqOqPcsY3lLYO7stwgWCw3QnGSul7q2MVZMCIOVXrRLW4arBkZHxyGJbVwvH9j1xBalGXtjaT6oRPW2IeFUV2ce6r6JGhHPh_NAdy34YeFGkk11_yQ7Miom-d2364HCu4T3ldVbfTwGDEYvRSBXb5xMiMCk5DEKCiGwyaiF04PJtk"/>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="font-semibold text-body-md truncate">Carlos Eduardo</h3>
+<span class="text-[11px] text-outline">Ontem</span>
+</div>
+<p class="text-auxiliary text-outline truncate">Obrigado pela sessão de hoje.</p>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded-md bg-[#25A675]/10 text-[#25A675] text-[10px] font-bold">Paciente</span>
+</div>
+</div>
+</div>
+<div class="px-4 py-3 hover:bg-surface-container-low transition-colors flex gap-3 cursor-pointer">
+<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="font-semibold text-body-md truncate">Bot Sentir Bem</h3>
+<span class="text-[11px] text-outline">Segunda</span>
+</div>
+<p class="text-auxiliary text-outline truncate">Triagem finalizada com sucesso.</p>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded-md bg-secondary/10 text-secondary text-[10px] font-bold">Chatbot</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Column 2: Chat Area -->
+<section class="flex-1 flex flex-col bg-[#F4F8F7] relative">
+<!-- Chat Header -->
+<div class="h-16 px-6 bg-white border-b border-outline-variant flex justify-between items-center z-10 ambient-shadow">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Headshot of a patient named Mariana Alves, looking directly at the camera with a calm and trusting expression. Soft morning light enters from the side, creating a high-end editorial feel. Clean background with teal and lavender soft tones that align with the Sentir Bem brand palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk8AxpNiE40qlBVRUaFMOK5ipYB3mSc6ngXw4wRnvXzmatCEq8DjoCOTWMT_9gfLs5rltNGQn3QiJ5p4k3xkQl8XXuxz1Txo3ZtwJOaHEtXkk01IZOQFvRjxRy6ZFxaQfbAZPIF2893pEEAAmNll5C8tVZAXtf95ZZGjjb96gc7T6Um9jjtO4KLxwlpPTQDIApe1j-wVCjh6rgvTMskCcX_v0tetTXNHfvMTcugOyLd868rH7fCns"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+</div>
+<div>
+<h2 class="font-semibold text-body-md">Mariana Alves</h2>
+<div class="flex items-center gap-2">
+<span class="text-xs text-[#25A675] font-medium flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-[#25A675] rounded-full"></span> Online
+                                </span>
+<span class="text-[11px] text-outline">• Chatbot Pausado</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-1.5 rounded-xl bg-primary text-white text-auxiliary font-semibold hover:opacity-90 transition-opacity">Assumir atendimento</button>
+<button class="px-4 py-1.5 rounded-xl bg-primary/10 text-primary text-auxiliary font-semibold hover:bg-primary/20 transition-colors">Devolver ao bot</button>
+</div>
+</div>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6 chat-scroll">
+<!-- System Message -->
+<div class="flex justify-center">
+<div class="bg-white/60 backdrop-blur-sm border border-outline-variant rounded-full px-4 py-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">smart_toy</span>
+<p class="text-auxiliary text-outline">Chatbot pausado por Dr. Ricardo Silva às 10:42</p>
+</div>
+</div>
+<!-- Received Message -->
+<div class="flex flex-col items-start max-w-[80%]">
+<div class="bg-white p-3 rounded-2xl rounded-tl-none ambient-shadow border border-outline-variant">
+<p class="text-body-md text-on-background">Olá, Dr. Ricardo! Acabei de completar o exercício de respiração que combinamos na última sessão. Me senti bem melhor depois.</p>
+</div>
+<span class="text-[10px] text-outline mt-1 ml-1">10:44</span>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-col items-end ml-auto max-w-[80%]">
+<div class="bg-primary text-white p-3 rounded-2xl rounded-tr-none shadow-md">
+<p class="text-body-md">Que excelente notícia, Mariana! Fico muito feliz em saber que a técnica está sendo útil no seu dia a dia. Você notou alguma dificuldade em algum momento do exercício?</p>
+</div>
+<div class="flex items-center gap-1 mt-1 mr-1">
+<span class="text-[10px] text-outline">10:45</span>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+<!-- System Info -->
+<div class="flex justify-center">
+<div class="bg-secondary/5 border border-secondary/20 rounded-lg px-4 py-2 max-w-sm text-center">
+<p class="text-auxiliary text-secondary font-medium">Lembrete: Próxima sessão agendada para amanhã às 14:00.</p>
+</div>
+</div>
+<!-- Received Message with attachment placeholder -->
+<div class="flex flex-col items-start max-w-[80%]">
+<div class="bg-white p-3 rounded-2xl rounded-tl-none ambient-shadow border border-outline-variant space-y-2">
+<p class="text-body-md text-on-background">Consegui anotar as sensações aqui neste arquivo.</p>
+<div class="flex items-center gap-3 p-2 bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="w-10 h-10 bg-primary/10 rounded flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold">diario_emocional.pdf</p>
+<p class="text-[10px] text-outline">1.2 MB • PDF</p>
+</div>
+<button class="text-primary"><span class="material-symbols-outlined">download</span></button>
+</div>
+</div>
+<span class="text-[10px] text-outline mt-1 ml-1">10:46</span>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 bg-white border-t border-outline-variant">
+<div class="flex items-end gap-3 max-w-5xl mx-auto">
+<div class="flex gap-1 mb-1">
+<button class="w-10 h-10 flex items-center justify-center text-outline hover:text-primary hover:bg-primary/5 rounded-full transition-all">
+<span class="material-symbols-outlined">mood</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-outline hover:text-primary hover:bg-primary/5 rounded-full transition-all">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-2xl p-2 border border-outline-variant focus-within:border-primary transition-colors">
+<div class="flex gap-2 px-2 pb-2 border-b border-outline-variant/30 mb-2">
+<button class="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded hover:bg-primary/20 transition-colors">#respostas_rapidas</button>
+<button class="text-[11px] font-semibold text-secondary bg-secondary/10 px-2 py-0.5 rounded hover:bg-secondary/20 transition-colors">Agendar Consulta</button>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-body-md resize-none py-1 px-2 chat-scroll max-h-32" placeholder="Escreva uma mensagem para Mariana..." rows="1"></textarea>
+</div>
+<button class="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Column 3: Profile Sidebar -->
+<section class="w-80 bg-white border-l border-outline-variant overflow-y-auto chat-scroll flex flex-col">
+<div class="p-8 flex flex-col items-center text-center border-b border-outline-variant">
+<img class="w-24 h-24 rounded-full border-4 border-surface-container-high object-cover mb-4" data-alt="A bright and elegant profile portrait of Mariana Alves. She wears a soft lavender blouse that complements the UI design. The lighting is flattering and professional, capturing her calm and hopeful personality. The background consists of soft out-of-focus plants, adding a natural and organic touch to the digital medical environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABCWFZwrCVhiNN2yFZebnxKWiPkGq7DUDEIgku4npkY9YqAoQbzmnJM0DuSFtcWUhsrSKovY4ptKI88xBu2RWvrW8eqGF0zfQWSYygBmcaqaI3hu9C3NOHnMuqvBZBYWk8c9BV9R99eiFecUt7YHlai2GoJqrvYN7etop2QwPc_iv731p4kf44luqbclPlg_y5kJK6jB5rcLSrG9p0clzXv6iGs9cDg0EshBxMId0TTxIVPKJcN7g"/>
+<h2 class="font-headline-sm text-headline-sm text-primary mb-1">Mariana Alves</h2>
+<p class="text-body-md text-outline mb-3">Em acompanhamento</p>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-low text-primary rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-low text-primary rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">mail</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-low text-primary rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+</div>
+</div>
+<div class="p-6 space-y-6">
+<div>
+<h4 class="text-xs font-bold uppercase tracking-wider text-outline mb-4">Informações do Paciente</h4>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">phone</span>
+<div>
+<p class="text-auxiliary text-outline">Telefone</p>
+<p class="text-body-md font-medium">(11) 98765-4321</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">event</span>
+<div>
+<p class="text-auxiliary text-outline">Próxima Consulta</p>
+<p class="text-body-md font-medium text-secondary">Amanhã, às 14:00</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">account_balance_wallet</span>
+<div>
+<p class="text-auxiliary text-outline">Situação Financeira</p>
+<p class="text-body-md font-bold text-[#25A675]">Em dia</p>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant space-y-3">
+<h4 class="text-xs font-bold uppercase tracking-wider text-outline mb-2">Ações Rápidas</h4>
+<button class="w-full flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-variant transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">person</span>
+<span class="text-body-md font-medium">Ver Perfil Completo</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-variant transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">medical_information</span>
+<span class="text-body-md font-medium">Abrir Prontuário</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-3 rounded-xl bg-secondary/10 hover:bg-secondary/20 transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">calendar_add_on</span>
+<span class="text-body-md font-medium text-secondary">Agendar Sessão</span>
+</div>
+<span class="material-symbols-outlined text-secondary group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+</div>
+<!-- Mini Progress Graph Placeholder -->
+<div class="pt-4 border-t border-outline-variant">
+<h4 class="text-xs font-bold uppercase tracking-wider text-outline mb-4">Humor Semanal</h4>
+<div class="h-24 w-full flex items-end gap-2 px-2">
+<div class="flex-1 bg-primary/20 h-[40%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary/20 h-[60%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary/20 h-[30%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary/20 h-[80%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary/20 h-[50%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary/20 h-[90%] rounded-t-md hover:bg-primary transition-colors"></div>
+<div class="flex-1 bg-primary h-[70%] rounded-t-md"></div>
+</div>
+<div class="flex justify-between mt-2 px-1">
+<span class="text-[10px] text-outline">Seg</span>
+<span class="text-[10px] text-outline">Dom</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Micro-interactions and chat UI logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.querySelector('textarea');
+            if (textarea) {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
+            }
+
+            // Hover effects for message bubbles
+            const messages = document.querySelectorAll('.ambient-shadow');
+            messages.forEach(msg => {
+                msg.addEventListener('mouseenter', () => {
+                    msg.style.transform = 'translateY(-2px)';
+                    msg.style.transition = 'transform 0.2s ease';
+                });
+                msg.addEventListener('mouseleave', () => {
+                    msg.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body></html>
