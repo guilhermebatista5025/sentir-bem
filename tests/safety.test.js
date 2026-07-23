@@ -8,7 +8,13 @@ process.env.DISABLE_WHATSAPP = "true";
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { isCrisisMessage, isStartKeywordMessage, isStartMessage, normalize } = require("../chatbot");
+const {
+  classifySupabaseKey,
+  isCrisisMessage,
+  isStartKeywordMessage,
+  isStartMessage,
+  normalize
+} = require("../chatbot");
 
 /* ========================================================================== 
    Testes de normalização de mensagens
@@ -53,4 +59,10 @@ test("identifica palavras de início dentro de uma frase completa", () => {
   assert.equal(isStartKeywordMessage("eu não estou bem desde ontem", keywords), true);
   assert.equal(isStartKeywordMessage("eu adoraria conversar", ["dor"]), false);
   assert.equal(isStartKeywordMessage("quero informações sobre horários", keywords), false);
+});
+
+test("diferencia chaves públicas e privadas do Supabase", () => {
+  assert.equal(classifySupabaseKey("sb_publishable_exemplo"), "anon");
+  assert.equal(classifySupabaseKey("sb_secret_exemplo"), "secret");
+  assert.equal(classifySupabaseKey("valor-invalido"), "unknown");
 });

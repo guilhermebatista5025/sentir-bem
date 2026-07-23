@@ -782,7 +782,12 @@ async function checkHealth() {
     const data = await response.json();
     if (!response.ok) throw new Error();
     setHealth("health-api", "health-api-label", "ok", "Operacional");
-    setHealth("health-database", "health-database-label", data.database ? "ok" : "warn", data.database ? "Conectado" : "Não configurado");
+    const databaseLabel = data.database
+      ? "Conectado"
+      : data.databaseStatus === "insufficient_key"
+        ? "Chave sem permissão"
+        : "Não configurado";
+    setHealth("health-database", "health-database-label", data.database ? "ok" : "warn", databaseLabel);
   } catch {
     setHealth("health-api", "health-api-label", "error", "Indisponível");
     setHealth("health-database", "health-database-label", "error", "Não verificado");

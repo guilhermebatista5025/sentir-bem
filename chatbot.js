@@ -65,15 +65,39 @@ function addLog(message, type = "info") {
    Integração com o Supabase
    ========================================================================== */
 
-const supabaseConfigured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_KEY);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.API_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.CHAVE_API;
+const supabaseConfigured = Boolean(supabaseUrl && supabaseKey);
+
+function classifySupabaseKey(key = "") {
+  const value = String(key).trim();
+  if (value.startsWith("sb_secret_")) return "secret";
+  if (value.startsWith("sb_publishable_")) return "anon";
+
+  const parts = value.split(".");
+  if (parts.length !== 3) return "unknown";
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+    return typeof payload.role === "string" ? payload.role : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+const supabaseKeyRole = classifySupabaseKey(supabaseKey);
+const supabaseAccessConfigured = supabaseConfigured && supabaseKeyRole !== "anon";
 const supabase = supabaseConfigured
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+  ? createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: WebSocket }
     })
   : null;
 
 if (!supabaseConfigured) addLog("Supabase não configurado; registros não serão persistidos.", "warn");
+
+if (supabaseConfigured && !supabaseAccessConfigured) {
+  addLog("A chave do Supabase é pública/anon e não pode acessar as tabelas administrativas. Configure SUPABASE_SERVICE_ROLE_KEY.", "warn");
+}
 
 async function findClient(phone) {
   if (!supabase) return null;
@@ -604,7 +628,16 @@ function protectAdmin(req, res, next) {
    Rotas de saúde e painel administrativo
    ========================================================================== */
 
-app.get("/api/health", (req, res) => res.json({ ok: true, whatsapp: botStatus, database: supabaseConfigured }));
+app.get("/api/health", (req, res) => res.json({
+  ok: true,
+  whatsapp: botStatus,
+  database: supabaseAccessConfigured,
+  databaseStatus: !supabaseConfigured
+    ? "not_configured"
+    : supabaseAccessConfigured
+      ? "configured"
+      : "insufficient_key"
+}));
 app.use(["/admin", "/api/admin"], protectAdmin);
 app.get("/admin", (req, res) => res.redirect(301, "/admin/"));
 app.get("/admin/", (req, res) => res.sendFile(path.join(ADMIN_PATH, "index.html")));
@@ -811,4 +844,13 @@ process.on("SIGTERM", shutdown);
    Exportações utilizadas pelos testes
    ========================================================================== */
 
-module.exports = { app, server, startServer, isCrisisMessage, isStartKeywordMessage, isStartMessage, normalize };
+module.exports = {
+  app,
+  server,
+  startServer,
+  classifySupabaseKey,
+  isCrisisMessage,
+  isStartKeywordMessage,
+  isStartMessage,
+  normalize
+};

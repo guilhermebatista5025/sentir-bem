@@ -97,9 +97,13 @@ npm install
 Crie um arquivo `.env` na raiz do projeto contendo as chaves de acesso ao Supabase (consulte o modelo fornecido ou crie um a partir das suas credenciais do projeto):
 ```env
 SUPABASE_URL=sua_url_aqui
-SUPABASE_KEY=sua_chave_anonima_aqui
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_aqui
+ADMIN_USER=seu_usuario
+ADMIN_PASSWORD=uma_senha_forte
 PORT=3000
 ```
+
+O backend precisa da chave privada `service_role` (ou da nova chave `secret`) para acessar as tabelas administrativas. Não use nesse campo a chave `anon`/`publishable`, destinada ao navegador. Por compatibilidade, as variáveis antigas `API_URL` e `CHAVE_API` ainda são reconhecidas, mas devem ser migradas para os nomes acima.
 
 ### 3. Executando o Servidor e o Bot
 Inicie o servidor principal. O terminal exibirá um QR Code para você escanear com o WhatsApp do seu celular para ativar a sessão do bot:
