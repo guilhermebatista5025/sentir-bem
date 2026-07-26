@@ -1,20 +1,34 @@
 "use strict";
 
 const API = "/api/admin";
+const WEEK_DAYS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+const DEFAULT_SCHEDULE = {
+  "0": { ativo: false, inicio: "08:00", fim: "18:00" },
+  "1": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "2": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "3": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "4": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "5": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "6": { ativo: false, inicio: "08:00", fim: "13:00" }
+};
+const DEFAULT_FLOW = [
+  { id: "boas-vindas", tipo: "boasVindas", titulo: "Boas-vindas", conteudo: "Apresenta o assistente e inicia o acolhimento.", obrigatoria: true },
+  { id: "consentimento", tipo: "consentimento", titulo: "Consentimento", conteudo: "Explica a privacidade e solicita o aceite do paciente.", obrigatoria: true },
+  { id: "servicos", tipo: "servicos", titulo: "Escolha do serviço", conteudo: "Exibe os serviços disponíveis para atendimento.", obrigatoria: true },
+  { id: "agenda", tipo: "agenda", titulo: "Agenda", conteudo: "Oferece somente dias e períodos disponíveis.", obrigatoria: true }
+];
 const state = {
   sessions: [],
   patients: [],
   appointments: [],
-  conversations: [],
-  conversationMessages: [],
-  selectedConversationId: null,
-  conversationFilter: "all",
-  conversationSignature: "",
   config: {},
   services: [],
   periods: [],
   startMessages: [],
   startKeywords: [],
+  flowSteps: [],
+  flowDraft: [],
+  editingFlowStepId: null,
   selectedDate: isoDate(new Date()),
   calendarMonth: new Date().getMonth(),
   calendarYear: new Date().getFullYear(),
@@ -31,20 +45,17 @@ document.addEventListener("DOMContentLoaded", init);
 function init() {
   bindNavigation();
   bindInterface();
-  bindConversationInterface();
   bindConfiguration();
   bindModals();
   openInitialView();
   renderCalendar();
   loadConfig();
   refreshAll();
-  refreshConversations();
   checkStatus();
   checkHealth();
   startLogs();
   setInterval(checkStatus, 5000);
   setInterval(refreshAll, 12000);
-  setInterval(() => refreshConversations(true), 8000);
   setInterval(checkHealth, 30000);
   setInterval(() => setText("overview-clock", formatTime(new Date())), 1000);
 }
@@ -72,7 +83,6 @@ function showView(name, updateHash = true) {
   if (updateHash && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
   document.getElementById("global-search").value = "";
   applySearch("");
-  if (name === "conversations") refreshConversations(true);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -94,8 +104,10 @@ function bindInterface() {
     document.getElementById("notification-count").hidden = true;
   });
   document.getElementById("help-button").addEventListener("click", () => toast("Use o menu lateral para acessar cada área. As alterações do bot só são aplicadas ao clicar em Publicar ou Salvar."));
-  document.getElementById("logout-panel").addEventListener("click", () => {
-    if (confirm("Deseja sair do painel administrativo?")) location.replace("/");
+  document.getElementById("logout-panel").addEventListener("click", async () => {
+    if (!confirm("Deseja sair do painel administrativo?")) return;
+    await fetch("/api/auth/logout", { method: "POST" });
+    location.replace("/pages/login.html");
   });
   document.getElementById("test-chatbot").addEventListener("click", () => window.open("/?chatbot=open", "sentir-bem-chatbot", "noopener,noreferrer"));
   document.querySelectorAll("[data-zoom]").forEach((button) => button.addEventListener("click", () => zoomFlow(button.dataset.zoom)));
@@ -142,7 +154,7 @@ function bindConfiguration() {
     event.preventDefault();
     saveConfig();
   });
-  document.getElementById("publish-config").addEventListener("click", saveConfig);
+  document.getElementById("open-flow-editor").addEventListener("click", openFlowEditor);
   document.getElementById("add-service").addEventListener("click", () => addCollectionItem("service"));
   document.getElementById("add-period").addEventListener("click", () => addCollectionItem("period"));
   document.getElementById("add-start-message").addEventListener("click", () => addCollectionItem("start"));
@@ -168,6 +180,10 @@ function bindModals() {
   document.querySelectorAll(".close-modal").forEach((button) => button.addEventListener("click", () => closeModal("edit-modal")));
   document.querySelectorAll(".close-details").forEach((button) => button.addEventListener("click", () => closeModal("details-modal")));
   document.getElementById("apply-block-edit").addEventListener("click", applyBlockEdit);
+  document.querySelectorAll(".close-flow-editor").forEach((button) => button.addEventListener("click", () => closeModal("flow-editor-modal")));
+  document.getElementById("apply-flow-step").addEventListener("click", applyFlowStep);
+  document.getElementById("cancel-flow-step-edit").addEventListener("click", resetFlowStepForm);
+  document.getElementById("save-flow").addEventListener("click", saveFlowFromModal);
   document.querySelectorAll(".modal").forEach((modal) => modal.addEventListener("click", (event) => {
     if (event.target === modal) modal.hidden = true;
   }));
@@ -247,6 +263,7 @@ function renderConversationList(errorMessage = "") {
     button.type = "button";
     button.dataset.conversationId = conversation.id;
     const avatar = create("span", "contact-avatar", initials(conversation.name));
+    applyAvatar(avatar, conversation.name, conversation.avatarUrl);
     const copy = create("span", "conversation-item-copy");
     const title = create("span", "conversation-item-title");
     title.append(create("strong", "", conversation.name), create("time", "", conversationListTime(conversation.timestamp)));
@@ -344,9 +361,8 @@ function createMessageAttachment(message) {
 function updateConversationHeader(conversation) {
   if (!conversation) return;
   const name = conversation.name || "Contato";
-  const avatar = initials(name);
-  setText("chat-avatar", avatar);
-  setText("profile-avatar", avatar);
+  applyAvatar(document.getElementById("chat-avatar"), name, conversation.avatarUrl);
+  applyAvatar(document.getElementById("profile-avatar"), name, conversation.avatarUrl);
   setText("chat-name", name);
   setText("profile-name", name);
   setText("chat-phone", formatPhone(conversation.phone));
@@ -575,9 +591,15 @@ function calendarButton(day, date, muted) {
   const button = create("button", `calendar-day${muted ? " muted" : ""}`, day);
   button.type = "button";
   if (muted) { button.disabled = true; return button; }
+  if (!isAvailableDate(date)) {
+    button.classList.add("unavailable");
+    button.disabled = true;
+    button.title = "Dia indisponível para atendimento";
+  }
   if (date === isoDate(new Date())) button.classList.add("today");
   if (date === state.selectedDate) button.classList.add("selected");
   if (state.appointments.some((item) => item.date === date)) button.classList.add("has-events");
+  if (button.disabled) return button;
   button.addEventListener("click", () => {
     state.selectedDate = date;
     renderCalendar();
@@ -603,6 +625,58 @@ function renderDayAppointments() {
   });
 }
 
+function isAvailableDate(date) {
+  if (!date) return false;
+  const parsed = parseIsoDate(date);
+  const schedule = state.config.expediente?.[String(parsed.getDay())] || DEFAULT_SCHEDULE[String(parsed.getDay())];
+  return schedule.ativo !== false;
+}
+
+function renderScheduleEditor() {
+  const container = document.getElementById("schedule-days");
+  container.replaceChildren();
+  WEEK_DAYS.forEach((name, day) => {
+    const schedule = state.config.expediente?.[String(day)] || DEFAULT_SCHEDULE[String(day)];
+    const row = create("div", `schedule-row${schedule.ativo ? "" : " is-off"}`);
+    row.dataset.day = String(day);
+    const dayName = create("strong", "", name);
+    const toggleLabel = create("label", "schedule-toggle");
+    const toggle = document.createElement("input");
+    toggle.type = "checkbox";
+    toggle.checked = schedule.ativo;
+    toggle.setAttribute("aria-label", `${name} disponível`);
+    toggleLabel.append(toggle, create("i"));
+    const start = document.createElement("input");
+    start.type = "time";
+    start.value = schedule.inicio;
+    start.className = "schedule-time";
+    start.setAttribute("aria-label", `Início de ${name}`);
+    const end = document.createElement("input");
+    end.type = "time";
+    end.value = schedule.fim;
+    end.className = "schedule-time";
+    end.setAttribute("aria-label", `Fim de ${name}`);
+    start.disabled = end.disabled = !schedule.ativo;
+    toggle.addEventListener("change", () => {
+      row.classList.toggle("is-off", !toggle.checked);
+      start.disabled = end.disabled = !toggle.checked;
+    });
+    row.append(dayName, toggleLabel, start, end);
+    container.append(row);
+  });
+}
+
+function collectWorkSchedule() {
+  return Object.fromEntries(Array.from(document.querySelectorAll(".schedule-row")).map((row) => {
+    const inputs = row.querySelectorAll("input");
+    return [row.dataset.day, {
+      ativo: inputs[0].checked,
+      inicio: inputs[1].value || DEFAULT_SCHEDULE[row.dataset.day].inicio,
+      fim: inputs[2].value || DEFAULT_SCHEDULE[row.dataset.day].fim
+    }];
+  }));
+}
+
 async function loadConfig() {
   try {
     state.config = await api("/config");
@@ -610,8 +684,11 @@ async function loadConfig() {
     state.periods = normalizeCollection(state.config.periodos);
     state.startMessages = normalizeCollection(state.config.mensagensInicio);
     state.startKeywords = normalizeCollection(state.config.palavrasInicio);
+    state.flowSteps = normalizeFlow(state.config.fluxoPrincipal);
     fillConfigForm();
+    renderScheduleEditor();
     renderConfigPreview();
+    renderCalendar();
   } catch (error) {
     toast("Não foi possível carregar as configurações do chatbot.", true);
   }
@@ -627,6 +704,8 @@ function fillConfigForm() {
     "config-final": state.config.mensagemFinal,
     "config-privacy": state.config.privacidade,
     "config-days": state.config.diasParaExibir || 6,
+    "config-duration": state.config.duracaoConsultaMinutos || 50,
+    "config-interval": state.config.intervaloMinutos ?? 10,
     "config-samu": state.config.emergencia?.samu,
     "config-cvv": state.config.emergencia?.cvv,
     "config-emergency": state.config.emergencia?.mensagem
@@ -655,7 +734,11 @@ function collectConfig() {
     periodos: [...state.periods],
     mensagensInicio: [...state.startMessages],
     palavrasInicio: [...state.startKeywords],
+    fluxoPrincipal: state.flowSteps.map((step) => ({ ...step })),
     diasParaExibir: Number(value("config-days")) || 6,
+    duracaoConsultaMinutos: Number(value("config-duration")) || 50,
+    intervaloMinutos: Math.max(0, Number(value("config-interval")) || 0),
+    expediente: collectWorkSchedule(),
     chatbotAtivo: document.getElementById("toggle-active").checked,
     respostaForaHorario: document.getElementById("toggle-after-hours").checked,
     lembreteAutomatico: document.getElementById("toggle-reminder").checked,
@@ -673,36 +756,212 @@ async function saveConfig() {
   }
   if (!state.services.length) { toast("Adicione pelo menos um serviço antes de publicar.", true); showView("settings"); return; }
   if (!state.startMessages.length) { toast("Adicione pelo menos uma mensagem de início.", true); showView("settings"); return; }
-  const buttons = document.querySelectorAll("#publish-config, button[form='config-form']");
+  const schedule = collectWorkSchedule();
+  if (!Object.values(schedule).some((day) => day.ativo)) {
+    toast("Ative pelo menos um dia de trabalho.", true);
+    showView("settings");
+    return;
+  }
+  if (Object.values(schedule).some((day) => day.ativo && day.inicio >= day.fim)) {
+    toast("Em cada dia ativo, o horário final deve ser posterior ao inicial.", true);
+    showView("settings");
+    return;
+  }
+  const buttons = document.querySelectorAll("#save-flow, button[form='config-form']");
   buttons.forEach((button) => { button.disabled = true; });
   try {
     const next = collectConfig();
     await api("/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
     state.config = next;
     renderConfigPreview();
+    renderCalendar();
     toast("Configurações publicadas com sucesso.");
+    return true;
   } catch (error) {
     toast(error.message || "Não foi possível salvar as configurações.", true);
+    return false;
   } finally {
     buttons.forEach((button) => { button.disabled = false; });
   }
 }
 
 function renderConfigPreview() {
-  setText("flow-welcome", state.config.mensagemInicial || "Configure a mensagem de boas-vindas.");
-  setText("flow-privacy", state.config.privacidade || "Configure o aviso de privacidade.");
-  setText("flow-schedule", `${state.periods.length ? state.periods.join(", ") : "Períodos a configurar"} • ${state.config.diasParaExibir || 6} dias úteis`);
-  const container = document.getElementById("flow-services");
+  const track = document.getElementById("flow-track");
+  track.replaceChildren();
+  state.flowSteps.forEach((step, index) => {
+    const node = create("article", `flow-node${step.tipo === "servicos" ? " accent" : ""}`);
+    node.dataset.flowId = step.id;
+    node.append(create("span", "node-order", String(index + 1)), create("span", "node-label", step.titulo));
+    if (step.obrigatoria) node.append(create("span", "node-required", "Estrutural"));
+    if (step.tipo === "servicos") {
+      const chips = create("div", "mini-chips");
+      state.services.slice(0, 3).forEach((service) => chips.append(create("span", "", service)));
+      if (state.services.length > 3) chips.append(create("span", "", `+${state.services.length - 3}`));
+      node.append(chips);
+    } else {
+      node.append(create("p", "", flowStepContent(step)));
+    }
+    const editButton = create("button", "", "");
+    editButton.type = "button";
+    editButton.dataset.flowAction = "edit";
+    editButton.dataset.flowId = step.id;
+    editButton.append(create("span", "material-symbols-outlined", "edit"), document.createTextNode("Editar etapa"));
+    node.append(editButton);
+    track.append(node);
+  });
+  setText("flow-mode-label", `${state.flowSteps.length} etapas • Visualização do atendimento`);
+}
+
+function normalizeFlow(flow) {
+  const source = Array.isArray(flow) && flow.length ? flow : DEFAULT_FLOW;
+  return source.map((step, index) => ({
+    id: String(step.id || `etapa-${index + 1}`),
+    tipo: String(step.tipo || "mensagem"),
+    titulo: String(step.titulo || `Etapa ${index + 1}`),
+    conteudo: String(step.conteudo || ""),
+    obrigatoria: Boolean(step.obrigatoria)
+  }));
+}
+
+function flowStepContent(step) {
+  if (step.tipo === "boasVindas") return value("config-welcome") || state.config.mensagemInicial || step.conteudo;
+  if (step.tipo === "consentimento") return value("config-privacy") || state.config.privacidade || step.conteudo;
+  if (step.tipo === "agenda") {
+    const workingDays = Object.entries(state.config.expediente || DEFAULT_SCHEDULE)
+      .filter(([, schedule]) => schedule.ativo)
+      .map(([day]) => WEEK_DAYS[Number(day)].replace("-feira", ""));
+    return `${workingDays.join(", ") || "Nenhum dia ativo"} • ${state.config.duracaoConsultaMinutos || 50} min por consulta`;
+  }
+  return step.conteudo || "Etapa sem conteúdo.";
+}
+
+function openFlowEditor(focusId) {
+  state.flowDraft = state.flowSteps.map((step) => ({ ...step }));
+  resetFlowStepForm();
+  renderFlowEditor();
+  document.getElementById("flow-editor-modal").hidden = false;
+  if (focusId) startFlowStepEdit(focusId);
+}
+
+function renderFlowEditor() {
+  const container = document.getElementById("flow-step-list");
   container.replaceChildren();
-  state.services.slice(0, 3).forEach((service) => container.append(create("span", "", service)));
-  if (state.services.length > 3) container.append(create("span", "", `+${state.services.length - 3}`));
+  state.flowDraft.forEach((step, index) => {
+    const item = create("article", `flow-step-item${state.editingFlowStepId === step.id ? " editing" : ""}`);
+    const icon = create("span", "flow-step-index", String(index + 1));
+    const content = create("div", "flow-step-copy");
+    content.append(create("strong", "", step.titulo), create("p", "", flowStepContent(step)));
+    if (step.obrigatoria) content.append(create("small", "", "Etapa estrutural protegida"));
+    const actions = create("div", "flow-step-actions");
+    [
+      ["up", "arrow_upward", "Mover para cima", step.obrigatoria || index === 0 || state.flowDraft[index - 1]?.obrigatoria],
+      ["down", "arrow_downward", "Mover para baixo", step.obrigatoria || index === state.flowDraft.length - 1 || state.flowDraft[index + 1]?.obrigatoria],
+      ["edit", "edit", "Editar", false],
+      ["delete", "delete", "Excluir", step.obrigatoria]
+    ].forEach(([action, symbol, label, disabled]) => {
+      const button = create("button", action === "delete" ? "danger" : "", "");
+      button.type = "button";
+      button.dataset.flowAction = action;
+      button.dataset.flowId = step.id;
+      button.disabled = disabled;
+      button.title = disabled && action === "delete" ? "Etapa estrutural obrigatória" : label;
+      button.setAttribute("aria-label", `${label} ${step.titulo}`);
+      button.append(create("span", "material-symbols-outlined", symbol));
+      actions.append(button);
+    });
+    item.append(icon, content, actions);
+    container.append(item);
+  });
+  setText("flow-step-count", `${state.flowDraft.length} etapa${state.flowDraft.length === 1 ? "" : "s"}`);
+}
+
+function handleFlowAction(action, id) {
+  if (!["up", "down", "edit", "delete"].includes(action)) return;
+  if (document.getElementById("flow-editor-modal").hidden) return openFlowEditor(id);
+  const index = state.flowDraft.findIndex((step) => step.id === id);
+  if (index < 0) return;
+  if (action === "edit") return startFlowStepEdit(id);
+  if (action === "delete") {
+    if (state.flowDraft[index].obrigatoria) return toast("Esta etapa é estrutural e não pode ser excluída.", true);
+    state.flowDraft.splice(index, 1);
+    if (state.editingFlowStepId === id) resetFlowStepForm();
+  }
+  if (action === "up" && index > 0 && !state.flowDraft[index].obrigatoria && !state.flowDraft[index - 1].obrigatoria) {
+    [state.flowDraft[index - 1], state.flowDraft[index]] = [state.flowDraft[index], state.flowDraft[index - 1]];
+  }
+  if (action === "down" && index < state.flowDraft.length - 1 && !state.flowDraft[index].obrigatoria && !state.flowDraft[index + 1].obrigatoria) {
+    [state.flowDraft[index + 1], state.flowDraft[index]] = [state.flowDraft[index], state.flowDraft[index + 1]];
+  }
+  renderFlowEditor();
+}
+
+function startFlowStepEdit(id) {
+  const step = state.flowDraft.find((item) => item.id === id);
+  if (!step) return;
+  state.editingFlowStepId = id;
+  document.getElementById("flow-step-id").value = id;
+  document.getElementById("flow-step-title").value = step.titulo;
+  document.getElementById("flow-step-content").value = flowStepContent(step);
+  document.getElementById("flow-step-content").disabled = ["servicos", "agenda"].includes(step.tipo);
+  setText("flow-step-form-title", "Editar etapa");
+  document.getElementById("cancel-flow-step-edit").hidden = false;
+  const button = document.getElementById("apply-flow-step");
+  button.replaceChildren(create("span", "material-symbols-outlined", "check"), document.createTextNode("Aplicar edição"));
+  renderFlowEditor();
+}
+
+function resetFlowStepForm() {
+  state.editingFlowStepId = null;
+  document.getElementById("flow-step-id").value = "";
+  document.getElementById("flow-step-title").value = "";
+  document.getElementById("flow-step-content").value = "";
+  document.getElementById("flow-step-content").disabled = false;
+  setText("flow-step-form-title", "Adicionar etapa");
+  document.getElementById("cancel-flow-step-edit").hidden = true;
+  const button = document.getElementById("apply-flow-step");
+  button.replaceChildren(create("span", "material-symbols-outlined", "add"), document.createTextNode("Adicionar etapa"));
+}
+
+function applyFlowStep() {
+  const title = value("flow-step-title");
+  const content = value("flow-step-content");
+  if (!title) return toast("Informe o título da etapa.", true);
+  if (state.editingFlowStepId) {
+    const step = state.flowDraft.find((item) => item.id === state.editingFlowStepId);
+    if (!step) return;
+    step.titulo = title;
+    if (!["servicos", "agenda"].includes(step.tipo)) step.conteudo = content;
+    if (step.tipo === "boasVindas") document.getElementById("config-welcome").value = content;
+    if (step.tipo === "consentimento") document.getElementById("config-privacy").value = content;
+  } else {
+    if (!content) return toast("Informe o conteúdo da nova etapa.", true);
+    const newStep = {
+      id: `mensagem-${Date.now().toString(36)}`,
+      tipo: "mensagem",
+      titulo: title,
+      conteudo: content,
+      obrigatoria: false
+    };
+    const serviceIndex = state.flowDraft.findIndex((step) => step.tipo === "servicos");
+    state.flowDraft.splice(serviceIndex < 0 ? state.flowDraft.length : serviceIndex, 0, newStep);
+  }
+  resetFlowStepForm();
+  renderFlowEditor();
+  toast("Etapa atualizada. Salve o fluxo para publicar.");
+}
+
+async function saveFlowFromModal() {
+  state.flowSteps = state.flowDraft.map((step) => ({ ...step }));
+  const saved = await saveConfig();
+  if (saved) {
+    closeModal("flow-editor-modal");
+    toast("Fluxo salvo no banco de dados.");
+  }
 }
 
 function syncInlineEditsToForm() {
-  state.config.mensagemInicial = document.getElementById("flow-welcome").textContent;
-  state.config.privacidade = document.getElementById("flow-privacy").textContent;
-  document.getElementById("config-welcome").value = state.config.mensagemInicial || "";
-  document.getElementById("config-privacy").value = state.config.privacidade || "";
+  state.config.mensagemInicial = value("config-welcome");
+  state.config.privacidade = value("config-privacy");
 }
 
 function addCollectionItem(type) {
@@ -869,6 +1128,8 @@ async function clearAppointments() {
 }
 
 function handleDelegatedClick(event) {
+  const flowAction = event.target.closest("[data-flow-action]");
+  if (flowAction) return handleFlowAction(flowAction.dataset.flowAction, flowAction.dataset.flowId);
   const edit = event.target.closest("[data-edit-field]");
   if (edit) return openEditModal(edit.dataset.editField, edit.dataset.editLabel);
   const remove = event.target.closest("[data-remove-collection]");
@@ -981,6 +1242,7 @@ function normalizeConversation(raw) {
     id: String(raw.id || ""),
     name: String(raw.name || "Contato"),
     phone: String(raw.phone || ""),
+    avatarUrl: String(raw.avatarUrl || ""),
     isBusiness: Boolean(raw.isBusiness),
     unreadCount: Number(raw.unreadCount || 0),
     timestamp: raw.timestamp,
@@ -1026,6 +1288,14 @@ function normalizeHistory(history) {
 function initials(name = "") {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "SB").toUpperCase();
+}
+
+function applyAvatar(element, name, avatarUrl = "") {
+  if (!element) return;
+  const safeUrl = /^https:\/\//i.test(avatarUrl) ? avatarUrl : "";
+  element.textContent = safeUrl ? "" : initials(name);
+  element.style.backgroundImage = safeUrl ? `url("${safeUrl.replaceAll('"', "%22")}")` : "";
+  element.classList.toggle("has-photo", Boolean(safeUrl));
 }
 
 function conversationPreview(conversation) {

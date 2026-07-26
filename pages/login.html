@@ -14,6 +14,8 @@
     
     <!-- Left Side - Brand Showcase -->
     <aside class="login-aside">
+      <div class="login-orb login-orb-one" aria-hidden="true"></div>
+      <div class="login-orb login-orb-two" aria-hidden="true"></div>
       <div class="login-aside-top">
         <a href="../index.html" class="logo-link">
           <img src="../assets/identidade/logo-transparente.png" alt="Logo Psicólogo Messias Sousa" style="height: 100px; margin: -20px 0; display: block; width: auto;">
@@ -28,6 +30,7 @@
           <path d="M150 70C130 45 95 50 95 85C95 120 140 155 150 162C160 155 205 120 205 85C205 50 170 45 150 70Z" fill="var(--color-tertiary)" opacity="0.9" />
           <path d="M150 162C138 155 122 160 115 175C108 190 112 210 125 220C138 230 150 215 150 200C150 215 162 230 175 220C188 210 192 190 185 175C178 160 162 155 150 162Z" fill="var(--color-secondary)" />
         </svg>
+        <span class="login-welcome-badge"><i class="fa-solid fa-shield-heart"></i> Ambiente seguro e acolhedor</span>
         <blockquote class="login-quote">
           "Silencie sua mente e recupere o controle de suas emoções. A mudança começa na <span>prática</span>."
         </blockquote>
@@ -40,18 +43,20 @@
 
     <!-- Right Side - Login Form -->
     <main class="login-main">
+      <div class="login-main-glow" aria-hidden="true"></div>
       <div class="login-form-wrapper">
         <div class="login-form-header">
-          <h2>Seja bem-vindo</h2>
-          <p>Não possui cadastro? <a href="#" id="signupLink">Criar uma conta</a></p>
+          <span class="login-eyebrow"><i class="fa-solid fa-lock"></i> Área restrita</span>
+          <h2>Acesso administrativo</h2>
+          <p>Entre com as credenciais do painel Sentir Bem.</p>
         </div>
 
         <form id="loginForm" novalidate>
           <!-- Email input group with floating label -->
           <div class="form-group">
             <div class="form-input-wrapper">
-              <input type="email" id="email" class="form-input" placeholder=" " required autocomplete="email">
-              <label for="email" class="form-label">Endereço de E-mail</label>
+              <input type="text" id="email" class="form-input" placeholder=" " required autocomplete="username">
+              <label for="email" class="form-label">Usuário ou e-mail</label>
             </div>
           </div>
 
@@ -75,24 +80,14 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
-            <span>Entrar na Plataforma</span>
+            <span>Entrar na Plataforma <i class="fa-solid fa-arrow-right-long"></i></span>
             <div class="spinner"></div>
           </button>
 
-          <div class="divider">Ou acesse com</div>
-
-          <!-- Social logins -->
-          <div class="social-login-grid">
-            <button type="button" class="btn-social" id="googleBtn">
-              <i class="fab fa-google" style="color: #EA4335;"></i> Google
-            </button>
-            <button type="button" class="btn-social" id="appleBtn">
-              <i class="fab fa-apple" style="color: #000;"></i> Apple
-            </button>
-          </div>
+          <p class="login-security-note"><i class="fa-solid fa-shield-halved"></i> Seus dados são enviados por uma conexão protegida e permanecem confidenciais.</p>
 
           <!-- Back to home -->
-          <div style="text-align: center;">
+          <div class="login-back-wrapper">
             <a href="../index.html" class="btn-back-home">
               <i class="fa-solid fa-arrow-left-long"></i> Voltar para o Site
             </a>

@@ -79,10 +79,79 @@
     "Noite"
   ],
   "diasParaExibir": 6,
+  "duracaoConsultaMinutos": 50,
+  "intervaloMinutos": 10,
+  "expediente": {
+    "0": {
+      "fim": "18:00",
+      "ativo": false,
+      "inicio": "08:00"
+    },
+    "1": {
+      "fim": "18:00",
+      "ativo": true,
+      "inicio": "08:00"
+    },
+    "2": {
+      "fim": "18:00",
+      "ativo": true,
+      "inicio": "08:00"
+    },
+    "3": {
+      "fim": "18:00",
+      "ativo": true,
+      "inicio": "08:00"
+    },
+    "4": {
+      "fim": "18:00",
+      "ativo": true,
+      "inicio": "08:00"
+    },
+    "5": {
+      "fim": "18:00",
+      "ativo": true,
+      "inicio": "08:00"
+    },
+    "6": {
+      "fim": "13:00",
+      "ativo": false,
+      "inicio": "08:00"
+    }
+  },
+  "fluxoPrincipal": [
+    {
+      "id": "boas-vindas",
+      "tipo": "boasVindas",
+      "titulo": "Boas-vindas",
+      "conteudo": "Olá! Sou o Assistente Sentir Bem. Ofereço acolhimento inicial, informações e apoio para agendamento. Não realizo diagnóstico e não substituo psicoterapia ou atendimento de emergência.",
+      "obrigatoria": true
+    },
+    {
+      "id": "consentimento",
+      "tipo": "consentimento",
+      "titulo": "Consentimento",
+      "conteudo": "Explica a privacidade e solicita o aceite do paciente.",
+      "obrigatoria": true
+    },
+    {
+      "id": "servicos",
+      "tipo": "servicos",
+      "titulo": "Escolha do serviço",
+      "conteudo": "Exibe os serviços disponíveis para atendimento.",
+      "obrigatoria": true
+    },
+    {
+      "id": "agenda",
+      "tipo": "agenda",
+      "titulo": "Agenda",
+      "conteudo": "Oferece somente dias e períodos disponíveis.",
+      "obrigatoria": true
+    }
+  ],
   "privacidade": "Usaremos apenas os dados necessários para responder e organizar seu atendimento. Não envie senhas, documentos, dados bancários ou relatos clínicos detalhados pelo chatbot.",
   "emergencia": {
-    "samu": "192",
     "cvv": "188",
+    "samu": "192",
     "mensagem": "Se houver risco imediato, tentativa de suicídio, ferimento ou perigo, ligue para o SAMU 192 ou vá ao pronto atendimento mais próximo. Para apoio emocional, o CVV atende gratuitamente pelo 188, 24 horas."
   }
 }

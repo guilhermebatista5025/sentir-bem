@@ -1,7 +1,26 @@
 "use strict";
 
-/* ========================================================================== 
-   Dependências e configuração global
+/* ==========================================================================
+   BLOCO 1 — DEPENDÊNCIAS E CAMINHOS GLOBAIS
+   ==========================================================================
+   Este arquivo concentra duas aplicações que trabalham juntas:
+
+   1. O BOT, que mantém uma sessão do WhatsApp Web, recebe mensagens e executa
+      o fluxo de atendimento.
+   2. O SERVIDOR, que publica o site, protege o painel administrativo e oferece
+      as rotas HTTP usadas pelo painel.
+
+   Dependências críticas:
+   - whatsapp-web.js: conecta, recebe e envia mensagens no WhatsApp.
+   - Express: cria as páginas e APIs HTTP.
+   - Supabase: persiste clientes, CPF, configurações e agendamentos.
+   - WebSocket: transporte exigido pelo cliente Supabase nesta versão do Node.
+
+   ROOT é a raiz segura para todos os caminhos locais. CONFIG_PATH aponta para
+   a configuração padrão; PIX_QR_PATH aponta para a imagem enviada no pagamento.
+   Se Client/LocalAuth, ROOT ou PORT forem removidos, o bot ou o servidor deixa
+   de iniciar. Nunca coloque a chave privada do Supabase no código-fonte: ela é
+   lida exclusivamente das variáveis do arquivo .env.
    ========================================================================== */
 
 const crypto = require("crypto");
@@ -11,7 +30,7 @@ const path = require("path");
 const express = require("express");
 const qrcode = require("qrcode-terminal");
 const WebSocket = require("ws");
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
@@ -20,6 +39,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const CONFIG_PATH = path.join(ROOT, "config", "bot.json");
 const SITE_PATH = ROOT;
 const ADMIN_PATH = path.join(ROOT, "admin");
+const PIX_QR_PATH = path.join(ROOT, "assets", "QR-CODE-PIX", "PIX.jpeg");
+const PIX_KEY = "18817533793";
 const MAX_MESSAGE_LENGTH = 1000;
 const DEFAULT_START_MESSAGES = ["oi", "olá", "ola", "menu", "início", "inicio", "bom dia", "boa tarde", "boa noite"];
 const DEFAULT_START_KEYWORDS = [
@@ -35,8 +56,22 @@ const DEFAULT_START_KEYWORDS = [
   "esgotada", "burnout", "quero conversar", "preciso de ajuda", "não estou bem", "nao estou bem"
 ];
 
-/* ========================================================================== 
-   Configuração do assistente e estado em memória
+/* ==========================================================================
+   BLOCO 2 — CONFIGURAÇÃO DO BOT E ESTADO TEMPORÁRIO
+   ==========================================================================
+   readConfig() carrega config/bot.json como configuração inicial. Depois, na
+   inicialização, loadPersistedConfig() substitui esses valores pelos dados mais
+   recentes salvos no Supabase.
+
+   Mapas e conjuntos deste bloco existem somente enquanto o processo está vivo:
+   - sessions: etapa atual de cada pessoa no fluxo do WhatsApp.
+   - adminSessions: tokens de login do painel e seus horários de expiração.
+   - systemLogs: últimas ocorrências mostradas no console administrativo.
+   - sseClients: navegadores que recebem logs em tempo real.
+
+   O banco guarda dados permanentes; sessions não é o cadastro do cliente.
+   Reiniciar o servidor limpa conversas incompletas, mas não remove clientes,
+   configurações nem agendamentos já confirmados.
    ========================================================================== */
 
 function readConfig() {
@@ -49,9 +84,18 @@ function readConfig() {
 
 let botConfig = readConfig();
 const sessions = new Map();
-const humanTakeovers = new Set();
+const adminSessions = new Map();
 const systemLogs = [];
 const sseClients = new Set();
+const DEFAULT_WORK_SCHEDULE = {
+  "0": { ativo: false, inicio: "08:00", fim: "18:00" },
+  "1": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "2": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "3": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "4": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "5": { ativo: true, inicio: "08:00", fim: "18:00" },
+  "6": { ativo: false, inicio: "08:00", fim: "13:00" }
+};
 
 function addLog(message, type = "info") {
   const entry = { timestamp: new Date().toISOString(), type, message: String(message) };
@@ -61,8 +105,27 @@ function addLog(message, type = "info") {
   console[type === "error" ? "error" : "log"](`[${type.toUpperCase()}] ${entry.message}`);
 }
 
-/* ========================================================================== 
-   Integração com o Supabase
+/* ==========================================================================
+   BLOCO 3 — CAMADA DE BANCO DE DADOS (SUPABASE)
+   ==========================================================================
+   Esta é a única camada que deve conhecer nomes de tabelas e colunas. O fluxo
+   do WhatsApp chama estas funções em vez de executar consultas diretamente.
+
+   Responsabilidades:
+   - clientes: localizar por CPF, cadastrar, atualizar e excluir;
+   - agendamentos: criar, consultar, remarcar, alterar status e limpar;
+   - administradores: guardar somente hash de senha, nunca a senha em texto;
+   - configuracoes_sistema: persistir tudo que é alterado no painel.
+
+   Linhas lógicas essenciais:
+   - supabaseAccessConfigured impede uso administrativo com chave pública.
+   - findClientByCpf() transforma CPF em dígitos antes de consultar.
+   - saveClient() atualiza um cadastro existente antes de tentar inserir outro.
+   - saveAppointment() grava o histórico e a forma de pagamento.
+   - rescheduleAppointment() altera o registro existente, sem duplicá-lo.
+
+   Toda resposta do Supabase contém { data, error }. O teste de error é
+   obrigatório: ignorá-lo faria o bot confirmar algo que não foi salvo.
    ========================================================================== */
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.API_URL;
@@ -106,15 +169,35 @@ async function findClient(phone) {
   return data;
 }
 
-async function saveClient({ phone, nome }) {
+async function findClientByCpf(cpf) {
   if (!supabase) return null;
+  const digits = cpfDigits(cpf);
+  if (!digits) return null;
+  const variants = [digits, formatCpf(digits)];
+  const { data, error } = await supabase.from("clientes").select("*").in("cpf", variants).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function saveClient({ phone, from, nome, cpf }) {
+  if (!supabase) return null;
+  const clientPhone = String(phone || from || "").trim();
+  if (!clientPhone) throw new Error("Não foi possível identificar o telefone do cliente.");
+  const normalizedCpf = cpfDigits(cpf);
   const payload = {
-    phone,
+    phone: clientPhone,
     nome: String(nome).slice(0, 120),
+    ...(normalizedCpf ? { cpf: normalizedCpf } : {}),
     consentimento_em: new Date().toISOString(),
     timestamp: new Date().toISOString()
   };
-  const { data, error } = await supabase.from("clientes").upsert(payload, { onConflict: "phone" }).select().maybeSingle();
+  let existing = normalizedCpf ? await findClientByCpf(normalizedCpf) : null;
+  if (!existing) existing = await findClient(clientPhone);
+  if (existing?.phone) payload.phone = existing.phone;
+  const query = existing
+    ? supabase.from("clientes").update(payload).eq("phone", existing.phone)
+    : supabase.from("clientes").insert(payload);
+  const { data, error } = await query.select().maybeSingle();
   if (error) throw error;
   return data;
 }
@@ -136,15 +219,15 @@ async function deleteClient(phone) {
 async function saveAppointment(session) {
   if (!supabase) return null;
   const payload = {
-    from: session.from,
+    from: session.clientePhone || session.from,
     pushname: session.nome,
     servico: session.servico,
     agendamento_dia: session.diaLabel,
     agendamento_turno: session.periodo,
     agendamento_data_valor: session.diaValor,
-    pagamento: "A combinar",
+    pagamento: session.pagamento || "A combinar",
     valor_final: 0,
-    observacoes: "Solicitação recebida pelo Assistente Sentir Bem",
+    observacoes: `Solicitação recebida pelo Assistente Sentir Bem. CPF informado e validado: ${session.cpf ? "sim" : "não"}. Comprovante Pix recebido: ${session.comprovanteRecebido ? "sim" : "não se aplica"}.`,
     respostas: session.historico || [],
     status: "Pendente",
     timestamp: new Date().toISOString()
@@ -184,8 +267,135 @@ async function clearAppointments() {
   return (data || []).length;
 }
 
-/* ========================================================================== 
-   Normalização, segurança e utilitários de agenda
+async function findLatestAppointment(phone) {
+  if (!supabase || !phone) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .select("*")
+    .eq("from", phone)
+    .or("status.is.null,status.neq.Cancelado")
+    .order("timestamp", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function rescheduleAppointment(id, session) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .update({
+      agendamento_dia: session.diaLabel,
+      agendamento_turno: session.periodo,
+      agendamento_data_valor: session.diaValor,
+      status: "Pendente",
+      observacoes: [session.appointmentObservacoes, "Reagendamento solicitado pelo chatbot e aguardando confirmação da equipe."]
+        .filter(Boolean)
+        .join("\n"),
+      timestamp: new Date().toISOString()
+    })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+function hashAdminPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
+
+function verifyAdminPassword(password, encoded) {
+  const [algorithm, salt, expected] = String(encoded || "").split("$");
+  if (algorithm !== "scrypt" || !salt || !expected) return false;
+  const received = crypto.scryptSync(String(password), salt, 64);
+  const expectedBuffer = Buffer.from(expected, "hex");
+  return received.length === expectedBuffer.length && crypto.timingSafeEqual(received, expectedBuffer);
+}
+
+async function ensureAdminRecord() {
+  if (!supabaseAccessConfigured || !process.env.ADMIN_USER || !process.env.ADMIN_PASSWORD) return;
+  const username = process.env.ADMIN_USER.trim();
+  const { data: current, error: readError } = await supabase
+    .from("administradores")
+    .select("id,senha_hash")
+    .eq("usuario", username)
+    .maybeSingle();
+  if (readError) throw readError;
+  const passwordHash = current && verifyAdminPassword(process.env.ADMIN_PASSWORD, current.senha_hash)
+    ? current.senha_hash
+    : hashAdminPassword(process.env.ADMIN_PASSWORD);
+  const { error } = await supabase.from("administradores").upsert({
+    usuario: username,
+    nome_exibicao: "Administrador Sentir Bem",
+    perfil: "administrador",
+    senha_hash: passwordHash,
+    ativo: true,
+    atualizado_em: new Date().toISOString()
+  }, { onConflict: "usuario" });
+  if (error) throw error;
+}
+
+async function authenticateAdmin(username, password) {
+  if (!supabaseAccessConfigured) {
+    return safeEqual(username, process.env.ADMIN_USER) && safeEqual(password, process.env.ADMIN_PASSWORD);
+  }
+  const { data, error } = await supabase
+    .from("administradores")
+    .select("id,senha_hash,ativo")
+    .eq("usuario", username)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || !data.ativo || !verifyAdminPassword(password, data.senha_hash)) return false;
+  await supabase.from("administradores").update({ ultimo_login_em: new Date().toISOString() }).eq("id", data.id);
+  return true;
+}
+
+async function persistConfig(config, updatedBy) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
+  if (!supabaseAccessConfigured) return;
+  const { error } = await supabase.from("configuracoes_sistema").upsert({
+    id: "bot",
+    dados: config,
+    atualizado_em: new Date().toISOString(),
+    atualizado_por: updatedBy || "administrador"
+  }, { onConflict: "id" });
+  if (error) throw error;
+}
+
+async function loadPersistedConfig() {
+  if (!supabaseAccessConfigured) return;
+  const { data, error } = await supabase
+    .from("configuracoes_sistema")
+    .select("dados")
+    .eq("id", "bot")
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.dados && typeof data.dados === "object") {
+    botConfig = { ...botConfig, ...data.dados };
+    await persistConfig(botConfig, "sistema");
+  } else {
+    await persistConfig(botConfig, "sistema");
+  }
+}
+
+/* ==========================================================================
+   BLOCO 4 — NORMALIZAÇÃO, SEGURANÇA E DISPONIBILIDADE
+   ==========================================================================
+   normalize() remove diferenças de acento e maiúsculas para que "OLÁ", "ola"
+   e "Olá" sejam entendidos da mesma forma.
+
+   A ordem das regras de segurança é importante:
+   - isCrisisMessage() identifica risco de morte, violência ou autoagressão.
+   - hasUrgentPhysicalSymptom() identifica sinais físicos potencialmente graves.
+   Essas verificações são executadas antes de CPF, pagamento ou agendamento.
+
+   nextWorkingDays() lê o expediente configurado pelo administrador. Dias
+   desativados nunca entram nas opções enviadas pelo bot, mantendo WhatsApp,
+   calendário e configurações com a mesma regra de disponibilidade.
    ========================================================================== */
 
 function normalize(text = "") {
@@ -231,18 +441,35 @@ function nextWorkingDays(count) {
   const names = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
   const cursor = new Date();
   cursor.setDate(cursor.getDate() + 1);
-  while (result.length < count) {
-    if (cursor.getDay() !== 0) {
+  let checkedDays = 0;
+  while (result.length < count && checkedDays < 366) {
+    const schedule = botConfig.expediente?.[String(cursor.getDay())] || DEFAULT_WORK_SCHEDULE[String(cursor.getDay())];
+    if (schedule.ativo) {
       const value = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
       result.push({ label: `${names[cursor.getDay()]} (${cursor.toLocaleDateString("pt-BR")})`, value });
     }
     cursor.setDate(cursor.getDate() + 1);
+    checkedDays += 1;
   }
   return result;
 }
 
-/* ========================================================================== 
-   Cliente do WhatsApp e eventos de conexão
+/* ==========================================================================
+   BLOCO 5 — CONEXÃO COM O WHATSAPP
+   ==========================================================================
+   Este bloco cria uma única instância de Client. LocalAuth guarda a sessão em
+   .runtime/whatsapp para evitar novo QR Code em cada reinício.
+
+   Eventos indispensáveis:
+   - "qr": disponibiliza um novo código para vincular o aparelho.
+   - "ready": confirma que envio e recebimento já podem funcionar.
+   - "auth_failure": registra falha de autenticação.
+   - "disconnected": impede o painel de exibir uma conexão inexistente.
+
+   Não crie um segundo Client usando a mesma pasta: dois Chromes disputando
+   LocalAuth corrompem a sessão e podem produzir QR inválido ou bloqueio do
+   perfil. puppeteerOptions controla apenas o navegador interno do WhatsApp,
+   não o navegador usado pelo visitante do site.
    ========================================================================== */
 
 const disabledWhatsApp = normalize(process.env.DISABLE_WHATSAPP) === "true";
@@ -286,17 +513,39 @@ if (!disabledWhatsApp) {
   });
 }
 
-/* ========================================================================== 
-   Mensagens e fluxo de conversa
+/* ==========================================================================
+   BLOCO 6 — MOTOR DO CHATBOT
+   ==========================================================================
+   handleWhatsAppMessage() é o centro do atendimento. Cada mensagem passa por
+   uma máquina de estados: session.etapa indica qual resposta é esperada.
+
+   Caminho normal:
+   início -> consentimento -> menu -> CPF -> cadastro/consulta -> serviço ->
+   dia -> período -> pagamento -> confirmação -> banco.
+
+   Caminho de reagendamento:
+   menu -> CPF -> cliente existente -> agendamento existente -> novo dia ->
+   novo período -> atualização do mesmo registro.
+
+   Caminho Pix:
+   pagamento -> QR Code -> comprovante com "feito" -> confirmação.
+
+   Regras que não podem mudar de posição:
+   1. Mensagens de crise e urgência são avaliadas antes de sessions.
+   2. Dados só são solicitados depois do consentimento.
+   3. CPF é validado antes de qualquer consulta por identidade.
+   4. O bot só anuncia sucesso depois que o Supabase responde sem error.
    ========================================================================== */
 
 function menuText(name) {
   return `Olá${name ? `, *${name}*` : ""}! Como posso ajudar?\n\n` +
     "1️⃣ Solicitar agendamento\n" +
-    "2️⃣ Como funciona o atendimento\n" +
-    "3️⃣ Acolhimento e orientações gerais\n" +
-    "4️⃣ Falar com a equipe\n" +
-    "5️⃣ Privacidade e ajuda urgente\n\n" +
+    "2️⃣ Consultar meu agendamento\n" +
+    "3️⃣ Reagendar atendimento\n" +
+    "4️⃣ Como funciona o atendimento\n" +
+    "5️⃣ Acolhimento e orientações gerais\n" +
+    "6️⃣ Falar com a equipe\n" +
+    "7️⃣ Privacidade e ajuda urgente\n\n" +
     "Digite apenas o número da opção. Você pode enviar *menu* a qualquer momento.";
 }
 
@@ -307,61 +556,28 @@ async function sendMessage(to, text) {
   if (session) session.historico.push({ autor: "bot", texto: text, timestamp: new Date().toISOString() });
 }
 
-function requireWhatsAppConnection(res) {
-  if (!client || botStatus !== "CONECTADO") {
-    res.status(409).json({ error: "Conecte o WhatsApp para acessar as conversas." });
-    return false;
-  }
-  return true;
+async function sendPixInstructions(to) {
+  const caption = `Pagamento via *Pix*\n\nChave Pix: *${PIX_KEY}*\n\nQuando efetuar o pagamento, envie o comprovante aqui com a palavra *feito* na legenda.`;
+  const media = MessageMedia.fromFilePath(PIX_QR_PATH);
+  await client.sendMessage(to, media, { caption });
+  const session = sessions.get(to);
+  if (session) session.historico.push({ autor: "bot", texto: `[QR Code Pix enviado]\n${caption}`, timestamp: new Date().toISOString() });
 }
 
-function parseChatId(value) {
-  const id = String(value || "").trim();
-  return /^[a-zA-Z0-9_.:-]{5,160}@(c\.us|lid)$/.test(id) ? id : null;
-}
-
-function messageTimestamp(timestamp) {
-  const value = Number(timestamp);
-  return Number.isFinite(value) && value > 0 ? new Date(value * 1000).toISOString() : new Date().toISOString();
-}
-
-function serializeWhatsAppMessage(message) {
-  return {
-    id: message.id?._serialized || "",
-    fromMe: Boolean(message.fromMe),
-    body: String(message.body || ""),
-    type: String(message.type || "chat"),
-    timestamp: messageTimestamp(message.timestamp),
-    hasMedia: Boolean(message.hasMedia),
-    mediaName: String(message._data?.filename || ""),
-    mediaType: String(message._data?.mimetype || ""),
-    ack: Number(message.ack ?? 0)
-  };
-}
-
-async function serializeWhatsAppChat(chat) {
-  let contact = null;
-  try { contact = await chat.getContact(); } catch { /* contato pode estar indisponível */ }
-  const id = chat.id?._serialized || "";
-  const last = chat.lastMessage ? serializeWhatsAppMessage(chat.lastMessage) : null;
-  return {
-    id,
-    name: String(chat.name || contact?.pushname || contact?.name || contact?.number || "Contato"),
-    phone: String(contact?.number || id.split("@")[0] || ""),
-    isBusiness: Boolean(contact?.isBusiness),
-    unreadCount: Number(chat.unreadCount || 0),
-    timestamp: messageTimestamp(chat.timestamp || chat.lastMessage?.timestamp),
-    lastMessage: last,
-    mode: humanTakeovers.has(id) ? "human" : "bot"
-  };
+async function sendAppointmentConfirmation(to, session) {
+  await sendMessage(to, `Confira sua solicitação:\n\nNome: *${session.nome}*\nCPF: *${maskedCpf(session.cpf)}*\nAtendimento: *${session.servico}*\nDia: *${session.diaLabel}*\nPeríodo: *${session.periodo}*\nPagamento: *${session.pagamento}*\n\n1️⃣ Confirmar\n2️⃣ Cancelar`);
 }
 
 async function startConversation(msg) {
-  let knownClient = null;
-  try { knownClient = await findClient(msg.from); } catch (error) { addLog(error.message, "error"); }
+  /*
+   * Cria a sessão mínima antes de pedir consentimento. Nenhum cadastro permanente
+   * é criado aqui. `from` é o endereço técnico usado para responder no WhatsApp;
+   * a identidade civil será localizada depois, exclusivamente pelo CPF.
+   */
   const session = {
     from: msg.from,
-    nome: knownClient?.nome || "",
+    phone: msg.from,
+    nome: "",
     etapa: "consentimento",
     consentimento: false,
     historico: [{ autor: "cliente", texto: msg.body || "", timestamp: new Date().toISOString() }],
@@ -372,6 +588,11 @@ async function startConversation(msg) {
 }
 
 async function handleWhatsAppMessage(msg) {
+  /*
+   * FILTROS DE ENTRADA
+   * Ignora grupos, mensagens sem texto/legenda e o bot desligado. O limite de
+   * tamanho evita que uma mensagem enorme seja mantida inteira em memória.
+   */
   if (!msg.from || msg.from.endsWith("@g.us") || !msg.body) return;
   if (botConfig.chatbotAtivo === false) return;
   const rawText = String(msg.body).trim().slice(0, MAX_MESSAGE_LENGTH);
@@ -383,11 +604,18 @@ async function handleWhatsAppMessage(msg) {
     return;
   }
 
+  if (hasUrgentPhysicalSymptom(rawText)) {
+    await sendMessage(msg.from, "⚠️ Dor no peito de início súbito, falta de ar intensa ou desmaio podem ser uma urgência médica. Ligue para o SAMU 192 ou procure imediatamente um serviço de emergência. Este chatbot não consegue avaliar sintomas físicos nem descartar uma emergência.");
+    addLog(`Orientação de urgência física acionada para ${msg.from}`, "warn");
+    return;
+  }
+
   if (!sessions.has(msg.from)) {
+    /*
+     * Uma sessão só começa com saudação ou palavra configurada. Isso impede o
+     * bot de responder espontaneamente a qualquer conversa do número conectado.
+     */
     if (!isStartMessage(rawText) && !isStartKeywordMessage(rawText)) return;
-    if (hasUrgentPhysicalSymptom(rawText)) {
-      await sendMessage(msg.from, "⚠️ Dor no peito de início súbito, falta de ar intensa ou desmaio podem ser uma urgência médica. Ligue para o SAMU 192 ou procure imediatamente um serviço de emergência. Este chatbot não consegue avaliar sintomas físicos nem descartar uma emergência.");
-    }
     await startConversation(msg);
     return;
   }
@@ -403,6 +631,10 @@ async function handleWhatsAppMessage(msg) {
   }
 
   if (session.etapa === "consentimento") {
+    /*
+     * BARREIRA DE PRIVACIDADE
+     * Até o aceite, nenhuma chamada de saveClient/saveAppointment é realizada.
+     */
     if (text === "2" || text === "nao") {
       sessions.delete(msg.from);
       await sendMessage(msg.from, "Tudo bem. Nenhum dado desta conversa será salvo. Se precisar de atendimento, você pode falar diretamente com a equipe pelo WhatsApp.");
@@ -414,23 +646,33 @@ async function handleWhatsAppMessage(msg) {
     }
     session.consentimento = true;
     session.etapa = "menu";
+    const customFlowMessages = Array.isArray(botConfig.fluxoPrincipal)
+      ? botConfig.fluxoPrincipal.filter((step) => step.tipo === "mensagem" && step.conteudo)
+      : [];
+    for (const step of customFlowMessages) await sendMessage(msg.from, step.conteudo);
     await sendMessage(msg.from, menuText(session.nome));
     return;
   }
 
   if (session.etapa === "menu") {
-    if (text === "1") {
-      session.etapa = session.nome ? "servico" : "nome";
-      await sendMessage(msg.from, session.nome ? serviceMenu() : "Para organizar o pedido de agendamento, qual é o seu nome completo?");
-    } else if (text === "2") {
+    /*
+     * ROTEADOR PRINCIPAL
+     * As opções 1, 2 e 3 convergem para identificar_cpf. A ação desejada fica em
+     * acaoPendente, permitindo que o mesmo bloco de CPF sirva aos três caminhos.
+     */
+    if (["1", "2", "3"].includes(text)) {
+      session.acaoPendente = { "1": "agendar", "2": "consultar", "3": "reagendar" }[text];
+      session.etapa = "identificar_cpf";
+      await sendMessage(msg.from, "Para localizar seu cadastro, informe seu CPF. Envie somente os 11 números ou no formato 000.000.000-00.");
+    } else if (text === "4") {
       await sendMessage(msg.from, `Os atendimentos com ${botConfig.profissional} (${botConfig.crp}) são realizados online, com duração e frequência combinadas diretamente com o profissional. Para valores e disponibilidade atualizados, escolha a opção 1 ou fale com a equipe.\n\n${menuText(session.nome)}`);
-    } else if (text === "3") {
+    } else if (text === "5") {
       await sendMessage(msg.from, `Posso oferecer apenas orientações gerais e ajudar você a encontrar atendimento humano. Não faço diagnóstico nem substituo terapia. Se quiser, conte em uma frase qual tema procura: ansiedade, sono, estresse ou outro.\n\nPara agendar, envie *menu* e escolha a opção 1.`);
       session.etapa = "acolhimento";
-    } else if (text === "4") {
+    } else if (text === "6") {
       await sendMessage(msg.from, "Sua mensagem será direcionada para atendimento humano. Informe apenas seu nome e o melhor período para retorno, sem enviar detalhes clínicos sensíveis.");
       session.etapa = session.nome ? "retorno_periodo" : "retorno_nome";
-    } else if (text === "5") {
+    } else if (text === "7") {
       await sendMessage(msg.from, `${botConfig.privacidade}\n\n${botConfig.emergencia.mensagem}\n\n${menuText(session.nome)}`);
     } else {
       await sendMessage(msg.from, menuText(session.nome));
@@ -493,6 +735,43 @@ async function handleWhatsAppMessage(msg) {
     return;
   }
 
+  if (session.etapa === "reagendamento_dia") {
+    /*
+     * REAGENDAMENTO
+     * appointmentId aponta para o registro encontrado pelo CPF. A etapa apenas
+     * troca data/período; não cria outra cobrança nem outro agendamento.
+     */
+    const selected = session.dias?.[Number(text) - 1];
+    if (!selected) {
+      await sendMessage(msg.from, "Escolha um dos números de dia apresentados.");
+      return;
+    }
+    session.diaLabel = selected.label;
+    session.diaValor = selected.value;
+    session.etapa = "reagendamento_periodo";
+    await sendMessage(msg.from, "Qual novo período você prefere?\n\n" + botConfig.periodos.map((period, index) => `${index + 1}️⃣ ${period}`).join("\n"));
+    return;
+  }
+
+  if (session.etapa === "reagendamento_periodo") {
+    const period = botConfig.periodos[Number(text) - 1];
+    if (!period) {
+      await sendMessage(msg.from, "Escolha um dos períodos apresentados.");
+      return;
+    }
+    session.periodo = period;
+    try {
+      await rescheduleAppointment(session.appointmentId, session);
+      await sendMessage(msg.from, `✅ Reagendamento solicitado.\n\nNovo dia: *${session.diaLabel}*\nNovo período: *${session.periodo}*\nStatus: *Pendente de confirmação da equipe*`);
+      addLog(`Reagendamento solicitado por ${session.nome}.`);
+      sessions.delete(msg.from);
+    } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Não consegui salvar o reagendamento agora. Tente novamente em alguns instantes.");
+    }
+    return;
+  }
+
   if (session.etapa === "dia") {
     const selected = session.dias?.[Number(text) - 1];
     if (!selected) {
@@ -513,12 +792,153 @@ async function handleWhatsAppMessage(msg) {
       return;
     }
     session.periodo = period;
+    if (session.cpf) {
+      session.etapa = "pagamento";
+      await sendMessage(msg.from, paymentMenu());
+    } else {
+      session.etapa = "cpf";
+      await sendMessage(msg.from, "Para concluir a contratação, informe seu CPF. Você pode enviar somente os 11 números ou no formato 000.000.000-00.");
+    }
+    return;
+  }
+
+  if (session.etapa === "identificar_cpf") {
+    /*
+     * IDENTIDADE DO CLIENTE
+     * O CPF é normalizado para 11 dígitos e consultado no índice único do banco.
+     * Se não existir, o fluxo vai para cadastro_nome e depois retoma a ação.
+     */
+    if (!isValidCpf(rawText)) {
+      await sendMessage(msg.from, "O CPF informado não é válido. Confira os 11 números e tente novamente.");
+      return;
+    }
+    session.cpf = cpfDigits(rawText);
+    let registeredClient = null;
+    try { registeredClient = await findClientByCpf(session.cpf); } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Não consegui consultar seu cadastro agora. Tente novamente em alguns instantes.");
+      return;
+    }
+    if (!registeredClient) {
+      session.etapa = "cadastro_nome";
+      await sendMessage(msg.from, "Não encontrei um cadastro com esse CPF. Vou cadastrar você agora. Qual é o seu nome completo?");
+      return;
+    }
+    session.nome = registeredClient.nome || "";
+    session.clientePhone = registeredClient.phone;
+    if (session.acaoPendente === "agendar") {
+      session.etapa = "servico";
+      await sendMessage(msg.from, `Cadastro encontrado, *${session.nome}*. Vamos ao seu pedido.\n\n${serviceMenu()}`);
+      return;
+    }
+    let appointment = null;
+    try { appointment = await findLatestAppointment(registeredClient.phone); } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Encontrei seu cadastro, mas não consegui consultar o agendamento agora. Tente novamente em alguns instantes.");
+      return;
+    }
+    if (!appointment) {
+      if (session.acaoPendente === "reagendar") {
+        session.acaoPendente = "agendar";
+        session.etapa = "servico";
+        await sendMessage(msg.from, `Cadastro encontrado, mas não há agendamento ativo para remarcar. Vamos criar um novo.\n\n${serviceMenu()}`);
+      } else {
+        session.etapa = "menu";
+        await sendMessage(msg.from, `Cadastro encontrado, mas não há agendamento ativo para esse CPF.\n\n${menuText(session.nome)}`);
+      }
+      return;
+    }
+    if (session.acaoPendente === "consultar") {
+      session.etapa = "menu";
+      await sendMessage(msg.from, `Seu agendamento:\n\nServiço: *${appointment.servico || "A confirmar"}*\nDia: *${appointment.agendamento_dia || "A confirmar"}*\nPeríodo: *${appointment.agendamento_turno || "A confirmar"}*\nStatus: *${appointment.status || "Pendente"}*\nPagamento: *${appointment.pagamento || "A combinar"}*\n\n${menuText(session.nome)}`);
+      return;
+    }
+    session.appointmentId = appointment.id;
+    session.appointmentObservacoes = appointment.observacoes || "";
+    session.dias = nextWorkingDays(botConfig.diasParaExibir || 6);
+    session.etapa = "reagendamento_dia";
+    await sendMessage(msg.from, "Encontrei seu agendamento. Para qual novo dia deseja remarcar?\n\n" + session.dias.map((day, index) => `${index + 1}️⃣ ${day.label}`).join("\n"));
+    return;
+  }
+
+  if (session.etapa === "cadastro_nome") {
+    if (rawText.length < 3 || rawText.length > 120) {
+      await sendMessage(msg.from, "Informe um nome válido, com até 120 caracteres.");
+      return;
+    }
+    session.nome = rawText.replace(/[<>]/g, "");
+    try {
+      const createdClient = await saveClient(session);
+      session.clientePhone = createdClient?.phone || session.phone;
+    } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Não consegui criar seu cadastro agora. Confira os dados ou tente novamente mais tarde.");
+      return;
+    }
+    if (session.acaoPendente === "consultar") {
+      session.etapa = "menu";
+      await sendMessage(msg.from, `Cadastro criado com sucesso. Como ele é novo, ainda não existe agendamento associado.\n\n${menuText(session.nome)}`);
+      return;
+    }
+    session.acaoPendente = "agendar";
+    session.etapa = "servico";
+    await sendMessage(msg.from, `Cadastro criado com sucesso.\n\n${serviceMenu()}`);
+    return;
+  }
+
+  if (session.etapa === "cpf") {
+    if (!isValidCpf(rawText)) {
+      await sendMessage(msg.from, "O CPF informado não é válido. Confira os 11 números e tente novamente.");
+      return;
+    }
+    session.cpf = formatCpf(rawText);
+    session.etapa = "pagamento";
+    await sendMessage(msg.from, paymentMenu());
+    return;
+  }
+
+  if (session.etapa === "pagamento") {
+    /*
+     * PAGAMENTO
+     * Pix exige QR e comprovante antes da confirmação. Cartão e presencial
+     * seguem diretamente, mas todos persistem a escolha no mesmo campo.
+     */
+    const paymentMethods = { "1": "Pix", "2": "Cartão", "3": "Presencialmente" };
+    const payment = paymentMethods[text];
+    if (!payment) {
+      await sendMessage(msg.from, paymentMenu());
+      return;
+    }
+    session.pagamento = payment;
+    if (payment === "Pix") {
+      session.etapa = "comprovante_pix";
+      await sendPixInstructions(msg.from);
+      return;
+    }
     session.etapa = "confirmacao";
-    await sendMessage(msg.from, `Confira sua solicitação:\n\nNome: *${session.nome}*\nAtendimento: *${session.servico}*\nDia: *${session.diaLabel}*\nPeríodo: *${session.periodo}*\n\n1️⃣ Confirmar\n2️⃣ Cancelar`);
+    await sendAppointmentConfirmation(msg.from, session);
+    return;
+  }
+
+  if (session.etapa === "comprovante_pix") {
+    if (!text.includes("feito") || !msg.hasMedia) {
+      await sendMessage(msg.from, `Ainda estou aguardando o comprovante. Anexe a imagem ou o documento do pagamento e escreva *feito* na legenda.\n\nChave Pix: *${PIX_KEY}*`);
+      return;
+    }
+    session.comprovanteRecebido = true;
+    session.historico.push({ autor: "cliente", texto: "[Comprovante Pix recebido]", timestamp: new Date().toISOString() });
+    session.etapa = "confirmacao";
+    await sendMessage(msg.from, "✅ Comprovante recebido. A confirmação financeira será feita pela equipe.");
+    await sendAppointmentConfirmation(msg.from, session);
     return;
   }
 
   if (session.etapa === "confirmacao") {
+    /*
+     * COMMIT DO ATENDIMENTO
+     * Este é o ponto em que cliente e agendamento são realmente persistidos.
+     * A mensagem de sucesso só é enviada depois das duas operações concluírem.
+     */
     if (text === "2") {
       sessions.delete(msg.from);
       await sendMessage(msg.from, "Solicitação cancelada. Envie *menu* quando quiser começar novamente.");
@@ -545,16 +965,49 @@ function serviceMenu() {
   return "Qual tipo de atendimento você procura?\n\n" + botConfig.servicos.map((service, index) => `${index + 1}️⃣ ${service}`).join("\n");
 }
 
-/* ========================================================================== 
-   Inicialização dos eventos do WhatsApp
+function cpfDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function isValidCpf(value) {
+  const digits = cpfDigits(value);
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+  const check = (length) => {
+    let sum = 0;
+    for (let index = 0; index < length; index += 1) sum += Number(digits[index]) * (length + 1 - index);
+    const remainder = (sum * 10) % 11;
+    return (remainder === 10 ? 0 : remainder) === Number(digits[length]);
+  };
+  return check(9) && check(10);
+}
+
+function formatCpf(value) {
+  return cpfDigits(value).replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+}
+
+function maskedCpf(value) {
+  const digits = cpfDigits(value);
+  return digits.length === 11 ? `***.***.${digits.slice(6, 9)}-${digits.slice(9)}` : "informado";
+}
+
+function paymentMenu() {
+  return "Qual será a forma de pagamento?\n\n1️⃣ Pix\n2️⃣ Cartão\n3️⃣ Presencialmente";
+}
+
+/* ==========================================================================
+   BLOCO 7 — RECEPÇÃO DE EVENTOS E INICIALIZAÇÃO DO BOT
+   ==========================================================================
+   O evento "message" entrega cada mensagem recebida ao motor do bloco anterior.
+   O .catch() é obrigatório para uma falha isolada não encerrar o processo.
+
+   client.initialize() abre o navegador interno, restaura LocalAuth e começa a
+   sincronização com o WhatsApp. Esta chamada deve ocorrer uma única vez por
+   processo. DISABLE_WHATSAPP=true é usado em testes ou manutenção para iniciar
+   apenas o servidor HTTP, sem abrir o navegador interno.
    ========================================================================== */
 
 if (client) {
   client.on("message", (msg) => {
-    if (humanTakeovers.has(msg.from)) {
-      addLog(`Nova mensagem recebida em atendimento humano: ${msg.from}.`);
-      return;
-    }
     handleWhatsAppMessage(msg).catch((error) => addLog(error.stack || error.message, "error"));
   });
   client.initialize().catch((error) => {
@@ -563,8 +1016,20 @@ if (client) {
   });
 }
 
-/* ========================================================================== 
-   Servidor HTTP, proteções e limite de requisições
+/* ==========================================================================
+   BLOCO 8 — SERVIDOR HTTP E PROTEÇÕES GERAIS
+   ==========================================================================
+   A partir de `const app = express()` começa a parte servidor deste arquivo.
+   Tudo acima prepara dados e integrações; tudo abaixo recebe requisições web.
+
+   Middlewares críticos:
+   - express.json({ limit: "32kb" }): aceita JSON e limita payload abusivo.
+   - cabeçalhos X-Content-Type-Options/X-Frame-Options: reduzem ataques comuns.
+   - controle em /api: limita requisições por IP durante cada minuto.
+   - strict routing: diferencia /admin de /admin/ e evita loop de redireção.
+
+   A ordem dos middlewares é funcional. Proteções precisam ser registradas antes
+   das rotas; o tratador de erros precisa ficar depois de todas elas.
    ========================================================================== */
 
 const app = express();
@@ -602,30 +1067,70 @@ function safeEqual(received, expected) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function adminAuth(req, res, next) {
-  const expectedUser = process.env.ADMIN_USER;
-  const expectedPassword = process.env.ADMIN_PASSWORD;
-  if (!expectedUser || !expectedPassword) return res.status(503).send("Painel administrativo não configurado.");
-  const [type, token] = (req.headers.authorization || "").split(" ");
-  let credentials = ["", ""];
-  if (type === "Basic" && token) credentials = Buffer.from(token, "base64").toString("utf8").split(":");
-  if (!safeEqual(credentials[0], expectedUser) || !safeEqual(credentials.slice(1).join(":"), expectedPassword)) {
-    res.setHeader("WWW-Authenticate", 'Basic realm="Sentir Bem Admin"');
-    return res.status(401).send("Autenticação necessária.");
+/* --------------------------------------------------------------------------
+   SUB-BLOCO 8.1 — AUTENTICAÇÃO ADMINISTRATIVA
+   --------------------------------------------------------------------------
+   O login cria um token aleatório, armazenado em adminSessions e enviado em
+   cookie HttpOnly. O JavaScript da página não consegue ler esse cookie.
+   safeEqual() usa comparação resistente a diferenças de tempo; protectAdmin()
+   bloqueia tanto páginas /admin quanto APIs /api/admin sem sessão válida.
+
+   Estas sessões são intencionalmente temporárias e somem ao reiniciar o Node.
+   O usuário e o hash da senha continuam persistidos no Supabase.
+   -------------------------------------------------------------------------- */
+
+function parseCookies(header = "") {
+  return Object.fromEntries(header.split(";").map((part) => {
+    const index = part.indexOf("=");
+    if (index < 0) return ["", ""];
+    return [part.slice(0, index).trim(), decodeURIComponent(part.slice(index + 1).trim())];
+  }).filter(([key]) => key));
+}
+
+function createAdminSession(remember) {
+  const token = crypto.randomBytes(32).toString("hex");
+  const maxAge = remember ? 30 * 24 * 60 * 60 : 8 * 60 * 60;
+  adminSessions.set(token, Date.now() + maxAge * 1000);
+  return { token, maxAge };
+}
+
+function getAdminSession(req) {
+  const token = parseCookies(req.headers.cookie).sentir_bem_admin;
+  const expiresAt = token && adminSessions.get(token);
+  if (!expiresAt) return null;
+  if (expiresAt <= Date.now()) {
+    adminSessions.delete(token);
+    return null;
   }
-  next();
+  return token;
 }
 
 function protectAdmin(req, res, next) {
-  if (process.env.ADMIN_USER && process.env.ADMIN_PASSWORD) return adminAuth(req, res, next);
-  const address = req.socket.remoteAddress || "";
-  const localRequest = address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
-  if (process.env.NODE_ENV !== "production" && localRequest) return next();
-  return res.status(503).send("Painel administrativo protegido: configure ADMIN_USER e ADMIN_PASSWORD.");
+  const expectedUser = process.env.ADMIN_USER;
+  const expectedPassword = process.env.ADMIN_PASSWORD;
+  if (!expectedUser || !expectedPassword) return res.status(503).send("Painel administrativo não configurado.");
+  if (getAdminSession(req)) return next();
+  if (req.path.startsWith("/api/")) return res.status(401).json({ error: "Sessão expirada. Entre novamente." });
+  return res.redirect(302, `/pages/login.html?next=${encodeURIComponent(req.originalUrl)}`);
 }
 
-/* ========================================================================== 
-   Rotas de saúde e painel administrativo
+/* ==========================================================================
+   BLOCO 9 — ROTAS DA API E PAINEL ADMINISTRATIVO
+   ==========================================================================
+   Rotas públicas:
+   - GET /api/health: informa se servidor, WhatsApp e banco estão disponíveis.
+   - POST /api/auth/login: valida credenciais e cria o cookie administrativo.
+
+   Rotas protegidas:
+   - /api/admin/config: lê e salva fluxo, expediente e parâmetros do bot.
+   - /api/admin/sessions: mostra somente atendimentos atualmente em andamento.
+   - /api/admin/clients e /appointments: alimentam pacientes, agenda e financeiro.
+   - rotas de status/clear/delete/reset: exigem validação e confirmação explícita.
+   - /logs/stream: envia logs em tempo real por Server-Sent Events (SSE).
+
+   A validação de config impede remover etapas estruturais ou salvar horários
+   inválidos. A chave administrativa do Supabase nunca é enviada ao navegador:
+   o painel conversa com estas rotas, e somente o servidor conversa com o banco.
    ========================================================================== */
 
 app.get("/api/health", (req, res) => res.json({
@@ -638,6 +1143,32 @@ app.get("/api/health", (req, res) => res.json({
       ? "configured"
       : "insufficient_key"
 }));
+
+app.post("/api/auth/login", async (req, res, next) => {
+  try {
+    const username = typeof req.body.username === "string" ? req.body.username.trim() : "";
+    const password = typeof req.body.password === "string" ? req.body.password : "";
+    if (!process.env.ADMIN_USER || !process.env.ADMIN_PASSWORD) {
+      return res.status(503).json({ error: "Login administrativo não configurado." });
+    }
+    if (!await authenticateAdmin(username, password)) {
+      return res.status(401).json({ error: "Usuário ou senha incorretos." });
+    }
+    const { token, maxAge } = createAdminSession(Boolean(req.body.remember));
+    res.setHeader("Set-Cookie", `sentir_bem_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}`);
+    res.json({ ok: true, redirect: "/admin/" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  const token = parseCookies(req.headers.cookie).sentir_bem_admin;
+  if (token) adminSessions.delete(token);
+  res.setHeader("Set-Cookie", "sentir_bem_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+  res.json({ ok: true });
+});
+
 app.use(["/admin", "/api/admin"], protectAdmin);
 app.get("/admin", (req, res) => res.redirect(301, "/admin/"));
 app.get("/admin/", (req, res) => res.sendFile(path.join(ADMIN_PATH, "index.html")));
@@ -645,16 +1176,57 @@ app.use("/admin", express.static(ADMIN_PATH, { index: false, dotfiles: "deny" })
 
 app.get("/api/admin/status", (req, res) => res.json({ status: botStatus, qr: latestQrCode }));
 app.get("/api/admin/config", (req, res) => res.json(botConfig));
-app.post("/api/admin/config", (req, res) => {
+app.post("/api/admin/config", async (req, res, next) => {
+  try {
   const stringFields = ["nomeEmpresa", "nomeAssistente", "profissional", "crp", "mensagemInicial", "mensagemFinal", "saudacaoAdicional", "privacidade", "endereco", "linkMapa", "horarioManha", "horarioTarde"];
   const updates = Object.fromEntries(stringFields.filter((key) => typeof req.body[key] === "string").map((key) => [key, req.body[key].trim().slice(0, 500)]));
   for (const key of ["formasPagamento", "todosServicos", "periodos", "mensagensInicio", "palavrasInicio"]) {
     if (Array.isArray(req.body[key])) updates[key] = req.body[key].map((item) => String(item).trim().slice(0, 160)).filter(Boolean).slice(0, 100);
   }
+  if (Array.isArray(req.body.fluxoPrincipal)) {
+    updates.fluxoPrincipal = req.body.fluxoPrincipal.slice(0, 30).map((step, index) => ({
+      id: String(step.id || `etapa-${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80),
+      tipo: ["boasVindas", "consentimento", "servicos", "agenda", "mensagem"].includes(step.tipo) ? step.tipo : "mensagem",
+      titulo: String(step.titulo || `Etapa ${index + 1}`).trim().slice(0, 100),
+      conteudo: String(step.conteudo || "").trim().slice(0, 500),
+      obrigatoria: Boolean(step.obrigatoria)
+    })).filter((step) => step.id && step.titulo);
+    const requiredTypes = ["boasVindas", "consentimento", "servicos", "agenda"];
+    if (requiredTypes.some((type) => !updates.fluxoPrincipal.some((step) => step.tipo === type))) {
+      return res.status(400).json({ error: "O fluxo precisa manter as etapas estruturais de boas-vindas, consentimento, serviços e agenda." });
+    }
+    const positions = Object.fromEntries(requiredTypes.map((type) => [type, updates.fluxoPrincipal.findIndex((step) => step.tipo === type)]));
+    if (!(positions.boasVindas < positions.consentimento && positions.consentimento < positions.servicos && positions.servicos < positions.agenda)) {
+      return res.status(400).json({ error: "As etapas estruturais precisam manter a ordem segura do atendimento." });
+    }
+    if (updates.fluxoPrincipal.some((step, index) => step.tipo === "mensagem" && (index <= positions.consentimento || index >= positions.servicos))) {
+      return res.status(400).json({ error: "Etapas personalizadas devem ficar entre o consentimento e a escolha de serviço." });
+    }
+  }
   for (const key of ["chatbotAtivo", "respostaForaHorario", "lembreteAutomatico"]) {
     if (typeof req.body[key] === "boolean") updates[key] = req.body[key];
   }
   if (Number.isInteger(req.body.diasParaExibir)) updates.diasParaExibir = Math.min(30, Math.max(1, req.body.diasParaExibir));
+  if (Number.isInteger(req.body.duracaoConsultaMinutos)) updates.duracaoConsultaMinutos = Math.min(240, Math.max(10, req.body.duracaoConsultaMinutos));
+  if (Number.isInteger(req.body.intervaloMinutos)) updates.intervaloMinutos = Math.min(120, Math.max(0, req.body.intervaloMinutos));
+  if (req.body.expediente && typeof req.body.expediente === "object") {
+    updates.expediente = Object.fromEntries(Object.keys(DEFAULT_WORK_SCHEDULE).map((day) => {
+      const received = req.body.expediente[day] || {};
+      const fallback = botConfig.expediente?.[day] || DEFAULT_WORK_SCHEDULE[day];
+      const validTime = (value, defaultValue) => /^\d{2}:\d{2}$/.test(value) ? value : defaultValue;
+      return [day, {
+        ativo: typeof received.ativo === "boolean" ? received.ativo : fallback.ativo,
+        inicio: validTime(received.inicio, fallback.inicio),
+        fim: validTime(received.fim, fallback.fim)
+      }];
+    }));
+    if (!Object.values(updates.expediente).some((schedule) => schedule.ativo)) {
+      return res.status(400).json({ error: "Ative pelo menos um dia de trabalho." });
+    }
+    if (Object.values(updates.expediente).some((schedule) => schedule.ativo && schedule.inicio >= schedule.fim)) {
+      return res.status(400).json({ error: "O horário final deve ser posterior ao horário inicial." });
+    }
+  }
   if (req.body.emergencia && typeof req.body.emergencia === "object") {
     updates.emergencia = {
       ...botConfig.emergencia,
@@ -670,79 +1242,14 @@ app.post("/api/admin/config", (req, res) => {
   }
   const next = { ...botConfig, ...updates };
   if (!next.nomeEmpresa || !Array.isArray(next.servicos) || next.servicos.length === 0) return res.status(400).json({ error: "Configuração inválida." });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(next, null, 2), "utf8");
-  botConfig = readConfig();
+  await persistConfig(next, process.env.ADMIN_USER);
+  botConfig = next;
   res.json({ success: true, message: "Configuração atualizada." });
+  } catch (error) {
+    next(error);
+  }
 });
 app.get("/api/admin/sessions", (req, res) => res.json(Array.from(sessions.values())));
-app.get("/api/admin/conversations", async (req, res, next) => {
-  try {
-    if (!requireWhatsAppConnection(res)) return;
-    const chats = (await client.getChats())
-      .filter((chat) => parseChatId(chat.id?._serialized))
-      .sort((a, b) => Number(b.timestamp || b.lastMessage?.timestamp || 0) - Number(a.timestamp || a.lastMessage?.timestamp || 0))
-      .slice(0, 100);
-    const conversations = await Promise.all(chats.map(serializeWhatsAppChat));
-    res.json(conversations);
-  } catch (e) { next(e); }
-});
-app.get("/api/admin/conversations/:id/messages", async (req, res, next) => {
-  try {
-    if (!requireWhatsAppConnection(res)) return;
-    const chatId = parseChatId(req.params.id);
-    if (!chatId) return res.status(400).json({ error: "Conversa inválida." });
-    const limit = Math.min(150, Math.max(10, Number(req.query.limit) || 80));
-    const chat = await client.getChatById(chatId);
-    if (!chat) return res.status(404).json({ error: "Conversa não encontrada." });
-    const messages = await chat.fetchMessages({ limit });
-    res.json({ conversation: await serializeWhatsAppChat(chat), messages: messages.map(serializeWhatsAppMessage) });
-  } catch (e) { next(e); }
-});
-app.post("/api/admin/conversations/:id/messages", async (req, res, next) => {
-  try {
-    if (!requireWhatsAppConnection(res)) return;
-    const chatId = parseChatId(req.params.id);
-    const text = typeof req.body.text === "string" ? req.body.text.trim().slice(0, MAX_MESSAGE_LENGTH) : "";
-    if (!chatId || !text) return res.status(400).json({ error: "Conversa ou mensagem inválida." });
-    humanTakeovers.add(chatId);
-    const message = await client.sendMessage(chatId, text);
-    const session = sessions.get(chatId);
-    if (session) session.historico.push({ autor: "equipe", texto: text, timestamp: new Date().toISOString() });
-    addLog(`Mensagem enviada pela equipe para ${chatId}.`);
-    res.json({ success: true, message: serializeWhatsAppMessage(message), mode: "human" });
-  } catch (e) { next(e); }
-});
-app.post("/api/admin/conversations/:id/mode", async (req, res, next) => {
-  try {
-    if (!requireWhatsAppConnection(res)) return;
-    const chatId = parseChatId(req.params.id);
-    if (!chatId || !["human", "bot"].includes(req.body.mode)) return res.status(400).json({ error: "Modo de atendimento inválido." });
-    if (req.body.mode === "human") humanTakeovers.add(chatId);
-    else humanTakeovers.delete(chatId);
-    addLog(`${req.body.mode === "human" ? "Atendimento humano assumido" : "Conversa devolvida ao bot"}: ${chatId}.`);
-    res.json({ success: true, mode: req.body.mode });
-  } catch (e) { next(e); }
-});
-app.get("/api/admin/messages/media", async (req, res, next) => {
-  try {
-    if (!requireWhatsAppConnection(res)) return;
-    const messageId = String(req.query.id || "");
-    if (!/^[a-zA-Z0-9_@.:-]{10,300}$/.test(messageId)) return res.status(400).json({ error: "Anexo inválido." });
-    const message = await client.getMessageById(messageId);
-    if (!message || !message.hasMedia) return res.status(404).json({ error: "Anexo não encontrado." });
-    const media = await message.downloadMedia();
-    if (!media?.data) return res.status(410).json({ error: "Este anexo não está mais disponível no WhatsApp." });
-    const filename = String(media.filename || `anexo-${Date.now()}`)
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\x20-\x7E]/g, "-").replace(/[\r\n"\\/]/g, "-").slice(0, 160);
-    const buffer = Buffer.from(media.data, "base64");
-    if (buffer.length > 25 * 1024 * 1024) return res.status(413).json({ error: "O anexo excede o limite de 25 MB do painel." });
-    res.setHeader("Content-Type", media.mimetype || "application/octet-stream");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader("Cache-Control", "private, no-store");
-    res.send(buffer);
-  } catch (e) { next(e); }
-});
 app.get("/api/admin/clients", async (req, res, next) => { try { res.json(await listClients()); } catch (e) { next(e); } });
 app.get("/api/admin/appointments", async (req, res, next) => { try { res.json(await listAppointments()); } catch (e) { next(e); } });
 app.post("/api/admin/appointments/status", async (req, res, next) => {
@@ -776,7 +1283,6 @@ app.post("/api/admin/logout", async (req, res, next) => {
   try {
     if (!client) return res.status(409).json({ success: false, message: "WhatsApp não está ativo." });
     await client.logout();
-    humanTakeovers.clear();
     botStatus = "DESCONECTADO";
     latestQrCode = null;
     res.json({ success: true, message: "WhatsApp desconectado." });
@@ -791,8 +1297,16 @@ app.get("/api/admin/logs/stream", (req, res) => {
   req.on("close", () => sseClients.delete(res));
 });
 
-/* ========================================================================== 
-   Arquivos públicos e tratamento de erros
+/* ==========================================================================
+   BLOCO 10 — SITE PÚBLICO E TRATAMENTO CENTRAL DE ERROS
+   ==========================================================================
+   express.static publica apenas assets, CSS, JavaScript, páginas e o diretório
+   administrativo já protegido. O fallback entrega index.html para rotas do site
+   institucional.
+
+   O middleware final de erro registra a pilha no servidor, mas responde ao
+   navegador somente "Erro interno do servidor". Isso evita expor caminhos,
+   consultas ou detalhes do banco para visitantes.
    ========================================================================== */
 
 app.use("/assets", express.static(path.join(SITE_PATH, "assets"), { dotfiles: "deny" }));
@@ -807,8 +1321,20 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
-/* ========================================================================== 
-   Inicialização e encerramento seguro do servidor
+/* ==========================================================================
+   BLOCO 11 — CICLO DE VIDA DO SERVIDOR
+   ==========================================================================
+   http.createServer(app) transforma o aplicativo Express em um servidor real.
+
+   startServer() segue esta ordem:
+   1. garante o administrador no Supabase;
+   2. carrega a configuração persistida;
+   3. começa a escutar a PORT;
+   4. imprime links do site e do painel.
+
+   O teste `require.main === module` evita abrir a porta quando o arquivo é
+   importado pelos testes. shutdown() destrói o Client e fecha o HTTP ao receber
+   SIGINT/SIGTERM, reduzindo sessões travadas do navegador interno.
    ========================================================================== */
 
 const server = http.createServer(app);
@@ -816,21 +1342,33 @@ const server = http.createServer(app);
 function showServerLinks() {
   const localUrl = `http://localhost:${PORT}`;
   console.log("\n============================================================");
-  console.log("  SENTIR BEM ESTÁ NO AR");
+  console.log("  SERVIDOR SENTIR BEM RODANDO");
   console.log("============================================================");
-  console.log(`  Site oficial: ${localUrl}/`);
-  console.log(`  Abrir chatbot: ${localUrl}/admin/`);
+  console.log(`  Index principal: ${localUrl}/`);
+  console.log(`  Tela de admin:    ${localUrl}/admin/`);
   console.log("============================================================\n");
 }
 
-function startServer() {
+async function startServer() {
+  if (supabaseAccessConfigured) {
+    try {
+      await ensureAdminRecord();
+      await loadPersistedConfig();
+      addLog("Configurações e administrador sincronizados com o Supabase.");
+    } catch (error) {
+      addLog(`Falha ao sincronizar dados administrativos: ${error.message}`, "error");
+    }
+  }
   return server.listen(PORT, () => {
     addLog(`Servidor Sentir Bem ativo na porta ${PORT}.`);
     showServerLinks();
   });
 }
 
-if (require.main === module) startServer();
+if (require.main === module) startServer().catch((error) => {
+  addLog(error.stack || error.message, "error");
+  process.exit(1);
+});
 
 async function shutdown() {
   addLog("Encerrando servidor...");
@@ -840,8 +1378,13 @@ async function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-/* ========================================================================== 
-   Exportações utilizadas pelos testes
+/* ==========================================================================
+   BLOCO 12 — INTERFACE DE TESTES
+   ==========================================================================
+   Somente funções puras ou pontos controlados são exportados. Isso permite
+   validar CPF, gatilhos, crise e chaves do Supabase sem enviar mensagens reais.
+   startServer também é exportado para testes de integração, mas não executa
+   automaticamente quando chatbot.js é apenas importado.
    ========================================================================== */
 
 module.exports = {
@@ -850,6 +1393,7 @@ module.exports = {
   startServer,
   classifySupabaseKey,
   isCrisisMessage,
+  isValidCpf,
   isStartKeywordMessage,
   isStartMessage,
   normalize

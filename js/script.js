@@ -468,23 +468,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Simulated Login Submit
+  // Login administrativo
   if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const email = emailInput.value.trim();
+      const username = emailInput.value.trim();
       const password = passwordInput.value;
       
       // Reset validation states
       let hasError = false;
 
       // Basic validations
-      if (!email) {
-        showToast('E-mail Obrigatório', 'Por favor, informe o seu endereço de e-mail.', 'error');
-        hasError = true;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showToast('E-mail Inválido', 'Insira um formato de e-mail válido (ex: nome@email.com).', 'error');
+      if (!username) {
+        showToast('Usuário obrigatório', 'Informe o usuário ou e-mail administrativo.', 'error');
         hasError = true;
       }
 
@@ -502,28 +499,29 @@ document.addEventListener('DOMContentLoaded', () => {
       loginBtn.classList.add('btn-loading');
       loginBtn.disabled = true;
 
-      // Mock API communication latency
-      setTimeout(() => {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            remember: Boolean(document.getElementById('rememberMe')?.checked)
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Não foi possível entrar.');
+
+        showToast('Login realizado!', 'Abrindo o painel administrativo...', 'success');
+        const requestedPath = new URLSearchParams(window.location.search).get('next');
+        const destination = requestedPath?.startsWith('/admin') ? requestedPath : result.redirect;
+        setTimeout(() => window.location.replace(destination || '/admin/'), 500);
+      } catch (error) {
+        showToast('Acesso negado', error.message, 'error');
+      } finally {
         loginBtn.classList.remove('btn-loading');
         loginBtn.disabled = false;
-        
-        // Success Mock (always succeed for demo if validation passes)
-        showToast(
-          'Login Realizado!', 
-          `Bem-vindo de volta. Iniciando o seu painel de acompanhamento...`, 
-          'success'
-        );
-
-        // Reset fields
-        emailInput.value = '';
-        passwordInput.value = '';
-        
-        // Auto redirect mock home after success
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2500);
-
-      }, 1800);
+      }
     });
   }
 
