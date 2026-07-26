@@ -162,6 +162,9 @@ function bindConfiguration() {
   document.getElementById("new-service").addEventListener("keydown", (event) => {
     if (event.key === "Enter") { event.preventDefault(); addCollectionItem("service"); }
   });
+  document.getElementById("new-service-value").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); addCollectionItem("service"); }
+  });
   document.getElementById("new-period").addEventListener("keydown", (event) => {
     if (event.key === "Enter") { event.preventDefault(); addCollectionItem("period"); }
   });
@@ -179,6 +182,8 @@ function bindConfiguration() {
 function bindModals() {
   document.querySelectorAll(".close-modal").forEach((button) => button.addEventListener("click", () => closeModal("edit-modal")));
   document.querySelectorAll(".close-details").forEach((button) => button.addEventListener("click", () => closeModal("details-modal")));
+  document.querySelectorAll(".close-finance-details").forEach((button) => button.addEventListener("click", () => closeModal("finance-details-modal")));
+  document.getElementById("open-finance-details").addEventListener("click", () => openFinanceDetails());
   document.getElementById("apply-block-edit").addEventListener("click", applyBlockEdit);
   document.querySelectorAll(".close-flow-editor").forEach((button) => button.addEventListener("click", () => closeModal("flow-editor-modal")));
   document.getElementById("apply-flow-step").addEventListener("click", applyFlowStep);
@@ -552,15 +557,55 @@ function renderFinance() {
   if (!state.appointments.length) return body.append(emptyRow(5, "Nenhum lançamento disponível."));
   state.appointments.forEach((item) => {
     const row = create("tr", "searchable");
+    const valueButton = create("button", "finance-value-button", item.value > 0 ? money(item.value) : "Não informado");
+    valueButton.type = "button";
+    valueButton.disabled = !(item.value > 0);
+    if (item.value > 0) valueButton.addEventListener("click", () => openFinanceDetails(item.id));
     row.append(
       tablePerson(displayName(item), formatPhone(item.phone)),
       create("td", "", item.service || "Não informado"),
       cellWith(statusBadge(item.status)),
       create("td", "", item.payment || "A combinar"),
-      create("td", "table-primary", item.value > 0 ? money(item.value) : "Não informado")
+      cellWith(valueButton)
     );
     body.append(row);
   });
+}
+
+function openFinanceDetails(appointmentId = null) {
+  const records = state.appointments
+    .filter((item) => item.value > 0 && (appointmentId === null || String(item.id) === String(appointmentId)))
+    .sort((a, b) => dateValue(b.timestamp) - dateValue(a.timestamp));
+  const total = records.reduce((sum, item) => sum + item.value, 0);
+  setText("finance-modal-total", money(total));
+  setText(
+    "finance-details-subtitle",
+    appointmentId === null
+      ? `${records.length} pagamento${records.length === 1 ? "" : "s"} registrado${records.length === 1 ? "" : "s"}`
+      : "Detalhes do valor selecionado"
+  );
+  const list = document.getElementById("finance-payment-list");
+  list.replaceChildren();
+  if (!records.length) {
+    list.append(emptyNode("Nenhum valor foi registrado até o momento."));
+  } else {
+    records.forEach((item) => {
+      const patient = state.patients.find((entry) => normalizePhoneKey(entry.phone) === normalizePhoneKey(item.phone));
+      const article = create("article", "finance-payment-item");
+      const copy = create("div");
+      copy.append(
+        create("h3", "", displayName(item)),
+        create("p", "", `CPF: ${maskCpf(patient?.cpf)}`),
+        create("p", "", `Método: ${item.payment || "A combinar"}`),
+        create("p", "", `Serviço: ${item.service || "Não informado"}`)
+      );
+      const amount = create("div");
+      amount.append(create("strong", "", money(item.value)), create("time", "", formatDateTime(item.timestamp)));
+      article.append(copy, amount);
+      list.append(article);
+    });
+  }
+  document.getElementById("finance-details-modal").hidden = false;
 }
 
 function changeMonth(offset) {
@@ -680,7 +725,7 @@ function collectWorkSchedule() {
 async function loadConfig() {
   try {
     state.config = await api("/config");
-    state.services = normalizeCollection(state.config.servicos);
+    state.services = normalizeServices(state.config.servicos);
     state.periods = normalizeCollection(state.config.periodos);
     state.startMessages = normalizeCollection(state.config.mensagensInicio);
     state.startKeywords = normalizeCollection(state.config.palavrasInicio);
@@ -795,7 +840,7 @@ function renderConfigPreview() {
     if (step.obrigatoria) node.append(create("span", "node-required", "Estrutural"));
     if (step.tipo === "servicos") {
       const chips = create("div", "mini-chips");
-      state.services.slice(0, 3).forEach((service) => chips.append(create("span", "", service)));
+      state.services.slice(0, 3).forEach((service) => chips.append(create("span", "", `${service.nome} · ${money(service.valor)}`)));
       if (state.services.length > 3) chips.append(create("span", "", `+${state.services.length - 3}`));
       node.append(chips);
     } else {
@@ -972,8 +1017,16 @@ function addCollectionItem(type) {
   const list = lists[type];
   const item = input.value.trim();
   if (!item) return;
-  if (list.some((existing) => existing.toLocaleLowerCase("pt-BR") === item.toLocaleLowerCase("pt-BR"))) return toast("Este item já foi adicionado.", true);
-  list.push(item);
+  const itemName = (existing) => String(existing?.nome || existing || "");
+  if (list.some((existing) => itemName(existing).toLocaleLowerCase("pt-BR") === item.toLocaleLowerCase("pt-BR"))) return toast("Este item já foi adicionado.", true);
+  if (type === "service") {
+    const serviceValue = Number(document.getElementById("new-service-value").value);
+    if (!Number.isFinite(serviceValue) || serviceValue <= 0) return toast("Informe um valor válido para o serviço.", true);
+    list.push({ nome: item, valor: Math.round(serviceValue * 100) / 100 });
+    document.getElementById("new-service-value").value = "";
+  } else {
+    list.push(item);
+  }
   input.value = "";
   renderChips(containerIds[type], list, type);
   renderConfigPreview();
@@ -990,8 +1043,9 @@ function renderChips(containerId, list, type) {
     remove.type = "button";
     remove.dataset.removeCollection = type;
     remove.dataset.index = index;
-    remove.setAttribute("aria-label", `Remover ${item}`);
-    chip.append(create("span", "", item), remove);
+    const itemLabel = type === "service" ? `${item.nome} · ${money(item.valor)}` : item;
+    remove.setAttribute("aria-label", `Remover ${itemLabel}`);
+    chip.append(create("span", "", itemLabel), remove);
     container.append(chip);
   });
 }
@@ -1266,7 +1320,7 @@ function normalizeConversationMessage(raw) {
 }
 
 function normalizePatient(raw) {
-  return { phone: String(raw.phone || raw.from || ""), name: raw.nome || raw.pushname || "Paciente", consent: raw.consentimento_em || raw.consentimentoEm, timestamp: raw.timestamp };
+  return { phone: String(raw.phone || raw.from || ""), cpf: String(raw.cpf || ""), name: raw.nome || raw.pushname || "Paciente", consent: raw.consentimento_em || raw.consentimentoEm, timestamp: raw.timestamp };
 }
 
 function normalizeAppointment(raw) {
@@ -1349,6 +1403,15 @@ function normalizeCollection(collection) {
   return [];
 }
 
+function normalizeServices(collection) {
+  if (!Array.isArray(collection)) return [];
+  const fallbackValues = [180, 150, 90];
+  return collection.map((item, index) => ({
+    nome: String(item?.nome || item || "").trim(),
+    valor: Number(item?.valor) > 0 ? Number(item.valor) : fallbackValues[index] || 100
+  })).filter((item) => item.nome);
+}
+
 function tablePerson(primary, secondary) {
   const cell = create("td");
   cell.append(create("span", "table-primary", primary || "Não informado"), create("span", "table-secondary", secondary || ""));
@@ -1391,6 +1454,8 @@ function formatDateTime(value) { const date = new Date(value); return Number.isN
 function formatDateOnly(value) { if (!value) return "Data a confirmar"; const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseIsoDate(value) : new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("pt-BR"); }
 function relativeTime(value) { const difference = Date.now() - dateValue(value); if (!dateValue(value)) return ""; if (difference < 60000) return "agora"; if (difference < 3600000) return `há ${Math.floor(difference / 60000)} min`; if (difference < 86400000) return `há ${Math.floor(difference / 3600000)} h`; return formatDateOnly(value); }
 function money(value) { return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+function normalizePhoneKey(value = "") { return String(value).replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""); }
+function maskCpf(value = "") { const digits = String(value).replace(/\D/g, ""); return digits.length === 11 ? `***.***.${digits.slice(6, 9)}-${digits.slice(9)}` : "Não informado"; }
 function formatPhone(value = "") { const digits = String(value).replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""); if (digits.length === 11) return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`; if (digits.length === 10) return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`; return value || "Não informado"; }
 
 function setHealth(dotId, labelId, type, label) {

@@ -42,6 +42,7 @@ const ADMIN_PATH = path.join(ROOT, "admin");
 const PIX_QR_PATH = path.join(ROOT, "assets", "QR-CODE-PIX", "PIX.jpeg");
 const PIX_KEY = "18817533793";
 const MAX_MESSAGE_LENGTH = 1000;
+const DEFAULT_SERVICE_VALUES = [180, 150, 90];
 const DEFAULT_START_MESSAGES = ["oi", "olá", "ola", "menu", "início", "inicio", "bom dia", "boa tarde", "boa noite"];
 const DEFAULT_START_KEYWORDS = [
   "ansiedade", "ansioso", "ansiosa", "crise de ansiedade", "pânico", "panico",
@@ -79,7 +80,19 @@ function readConfig() {
   if (!config.nomeEmpresa || !Array.isArray(config.servicos) || !config.emergencia) {
     throw new Error("config/bot.json está incompleto");
   }
+  config.servicos = normalizeServiceCatalog(config.servicos);
   return config;
+}
+
+function normalizeServiceCatalog(services = []) {
+  return services.map((service, index) => {
+    const name = String(service?.nome || service || "").trim().slice(0, 120);
+    const informedValue = Number(service?.valor);
+    const value = Number.isFinite(informedValue) && informedValue > 0
+      ? Math.round(informedValue * 100) / 100
+      : DEFAULT_SERVICE_VALUES[index] || 100;
+    return { nome: name, valor: value };
+  }).filter((service) => service.nome);
 }
 
 let botConfig = readConfig();
@@ -226,7 +239,7 @@ async function saveAppointment(session) {
     agendamento_turno: session.periodo,
     agendamento_data_valor: session.diaValor,
     pagamento: session.pagamento || "A combinar",
-    valor_final: 0,
+    valor_final: Number(session.valorFinal) || 0,
     observacoes: `Solicitação recebida pelo Assistente Sentir Bem. CPF informado e validado: ${session.cpf ? "sim" : "não"}. Comprovante Pix recebido: ${session.comprovanteRecebido ? "sim" : "não se aplica"}.`,
     respostas: session.historico || [],
     status: "Pendente",
@@ -376,6 +389,7 @@ async function loadPersistedConfig() {
   if (error) throw error;
   if (data?.dados && typeof data.dados === "object") {
     botConfig = { ...botConfig, ...data.dados };
+    botConfig.servicos = normalizeServiceCatalog(botConfig.servicos);
     await persistConfig(botConfig, "sistema");
   } else {
     await persistConfig(botConfig, "sistema");
@@ -557,15 +571,15 @@ async function sendMessage(to, text) {
 }
 
 async function sendPixInstructions(to) {
-  const caption = `Pagamento via *Pix*\n\nChave Pix: *${PIX_KEY}*\n\nQuando efetuar o pagamento, envie o comprovante aqui com a palavra *feito* na legenda.`;
+  const session = sessions.get(to);
+  const caption = `Pagamento via *Pix*\n\nValor: *${formatMoney(session?.valorFinal)}*\nChave Pix: *${PIX_KEY}*\n\nQuando efetuar o pagamento, envie o comprovante aqui com a palavra *feito* na legenda.`;
   const media = MessageMedia.fromFilePath(PIX_QR_PATH);
   await client.sendMessage(to, media, { caption });
-  const session = sessions.get(to);
   if (session) session.historico.push({ autor: "bot", texto: `[QR Code Pix enviado]\n${caption}`, timestamp: new Date().toISOString() });
 }
 
 async function sendAppointmentConfirmation(to, session) {
-  await sendMessage(to, `Confira sua solicitação:\n\nNome: *${session.nome}*\nCPF: *${maskedCpf(session.cpf)}*\nAtendimento: *${session.servico}*\nDia: *${session.diaLabel}*\nPeríodo: *${session.periodo}*\nPagamento: *${session.pagamento}*\n\n1️⃣ Confirmar\n2️⃣ Cancelar`);
+  await sendMessage(to, `Confira sua solicitação:\n\nNome: *${session.nome}*\nCPF: *${maskedCpf(session.cpf)}*\nAtendimento: *${session.servico}*\nValor: *${formatMoney(session.valorFinal)}*\nDia: *${session.diaLabel}*\nPeríodo: *${session.periodo}*\nPagamento: *${session.pagamento}*\n\n1️⃣ Confirmar\n2️⃣ Cancelar`);
 }
 
 async function startConversation(msg) {
@@ -724,11 +738,13 @@ async function handleWhatsAppMessage(msg) {
 
   if (session.etapa === "servico") {
     const index = Number(text) - 1;
-    if (!botConfig.servicos[index]) {
+    const selectedService = botConfig.servicos[index];
+    if (!selectedService) {
       await sendMessage(msg.from, serviceMenu());
       return;
     }
-    session.servico = botConfig.servicos[index];
+    session.servico = selectedService.nome;
+    session.valorFinal = selectedService.valor;
     session.dias = nextWorkingDays(botConfig.diasParaExibir || 6);
     session.etapa = "dia";
     await sendMessage(msg.from, "Qual dia você prefere?\n\n" + session.dias.map((day, i) => `${i + 1}️⃣ ${day.label}`).join("\n"));
@@ -962,7 +978,12 @@ async function handleWhatsAppMessage(msg) {
 }
 
 function serviceMenu() {
-  return "Qual tipo de atendimento você procura?\n\n" + botConfig.servicos.map((service, index) => `${index + 1}️⃣ ${service}`).join("\n");
+  return "Qual tipo de atendimento você procura?\n\n" +
+    botConfig.servicos.map((service, index) => `${index + 1}️⃣ ${service.nome} — ${formatMoney(service.valor)}`).join("\n");
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function cpfDigits(value) {
@@ -1236,9 +1257,9 @@ app.post("/api/admin/config", async (req, res, next) => {
     };
   }
   if (Array.isArray(req.body.servicos)) {
-    updates.servicos = req.body.servicos.map((item) => String(item).trim().slice(0, 160)).filter(Boolean).slice(0, 100);
+    updates.servicos = normalizeServiceCatalog(req.body.servicos).slice(0, 100);
   } else if (req.body.servicos && typeof req.body.servicos === "object") {
-    updates.servicos = Object.values(req.body.servicos).map((item) => String(item && item.nome || "").trim().slice(0, 160)).filter(Boolean).slice(0, 100);
+    updates.servicos = normalizeServiceCatalog(Object.values(req.body.servicos)).slice(0, 100);
   }
   const next = { ...botConfig, ...updates };
   if (!next.nomeEmpresa || !Array.isArray(next.servicos) || next.servicos.length === 0) return res.status(400).json({ error: "Configuração inválida." });

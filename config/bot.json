@@ -69,9 +69,18 @@
     "não estou bem"
   ],
   "servicos": [
-    "Primeira consulta psicológica online",
-    "Acompanhamento psicológico online",
-    "Informações sobre atendimento"
+    {
+      "nome": "Primeira consulta psicológica online",
+      "valor": 180
+    },
+    {
+      "nome": "Acompanhamento psicológico online",
+      "valor": 150
+    },
+    {
+      "nome": "Informações sobre atendimento",
+      "valor": 90
+    }
   ],
   "periodos": [
     "Manhã",
