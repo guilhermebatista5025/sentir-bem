@@ -42,6 +42,7 @@ const ADMIN_PATH = path.join(ROOT, "admin");
 const PIX_QR_PATH = path.join(ROOT, "assets", "QR-CODE-PIX", "PIX.jpeg");
 const PIX_KEY = "18817533793";
 const MAX_MESSAGE_LENGTH = 1000;
+const TYPING_DELAY_MS = 3000;
 const DEFAULT_SERVICE_VALUES = [180, 150, 90];
 const DEFAULT_START_MESSAGES = ["oi", "olá", "ola", "menu", "início", "inicio", "bom dia", "boa tarde", "boa noite"];
 const DEFAULT_START_KEYWORDS = [
@@ -269,6 +270,105 @@ async function updateAppointmentStatus(id, status) {
   return data;
 }
 
+async function findAppointmentById(id) {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function updateAppointment(id, updates) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+function appointmentHistory(appointment) {
+  return Array.isArray(appointment?.respostas) ? appointment.respostas : [];
+}
+
+function appendAppointmentNote(notes, message) {
+  return [String(notes || "").trim(), String(message || "").trim()].filter(Boolean).join("\n");
+}
+
+function isAttendancePayment(payment) {
+  const normalized = normalize(payment);
+  return normalized === "pix" || normalized === "presencial" || normalized === "presencialmente";
+}
+
+function isFinancialAppointment(appointment) {
+  return !["cancelado", "nao compareceu"].includes(normalize(appointment?.status))
+    && Number(appointment?.valor_final ?? appointment?.value ?? 0) > 0;
+}
+
+function latestNoShowFlow(appointment) {
+  return appointmentHistory(appointment)
+    .filter((entry) => entry?.tipo === "no_show_flow")
+    .at(-1) || null;
+}
+
+async function recordAttendance(id, attended, adminNote = "") {
+  const appointment = await findAppointmentById(id);
+  if (!appointment) return null;
+  if (!isAttendancePayment(appointment.pagamento)) {
+    const error = new Error("Somente pagamentos via Pix ou presenciais podem ser tratados nesta seção.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (["concluido", "cancelado", "nao compareceu"].includes(normalize(appointment.status))) {
+    const error = new Error("Este atendimento já foi encerrado.");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const sanitizedNote = String(adminNote || "").replace(/[<>]/g, "").trim().slice(0, 500);
+  const history = appointmentHistory(appointment);
+  if (attended) {
+    return updateAppointment(id, {
+      status: "Concluído",
+      observacoes: appendAppointmentNote(
+        appointment.observacoes,
+        `Presença confirmada pela equipe em ${new Date(now).toLocaleString("pt-BR")}.${sanitizedNote ? ` Observação: ${sanitizedNote}` : ""}`
+      ),
+      respostas: [...history, {
+        autor: "sistema",
+        texto: "Presença confirmada pela equipe; atendimento concluído.",
+        timestamp: now,
+        tipo: "attendance"
+      }]
+    });
+  }
+
+  const originalValue = Number(appointment.valor_final) || 0;
+  return updateAppointment(id, {
+    status: "Não compareceu",
+    valor_final: 0,
+    observacoes: appendAppointmentNote(
+      appointment.observacoes,
+      `Agendamento cancelado automaticamente por não comparecimento em ${new Date(now).toLocaleString("pt-BR")}. Horário liberado e valor retirado do financeiro.${sanitizedNote ? ` Observação da equipe: ${sanitizedNote}` : ""}`
+    ),
+    respostas: [...history, {
+      autor: "sistema",
+      texto: "Falta registrada pela equipe. Aguardando o motivo do cliente.",
+      timestamp: now,
+      tipo: "no_show_flow",
+      etapa: "aguardando_motivo",
+      valorOriginal: originalValue
+    }]
+  });
+}
+
 async function clearAppointments() {
   if (!supabase) return 0;
   const { data, error } = await supabase
@@ -286,14 +386,28 @@ async function findLatestAppointment(phone) {
     .from("agendamentos")
     .select("*")
     .eq("from", phone)
-    .or("status.is.null,status.neq.Cancelado")
     .order("timestamp", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
   if (error) throw error;
-  return data;
+  return (data || []).find((appointment) =>
+    !["cancelado", "concluido", "nao compareceu"].includes(normalize(appointment.status))
+  ) || null;
 }
 
+async function findPendingNoShowFollowUp(phone) {
+  if (!supabase || !phone) return null;
+  const { data, error } = await supabase
+    .from("agendamentos")
+    .select("*")
+    .eq("from", phone)
+    .eq("status", "Não compareceu")
+    .order("timestamp", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return (data || []).find((appointment) =>
+    ["aguardando_motivo", "aguardando_remarcacao"].includes(latestNoShowFlow(appointment)?.etapa)
+  ) || null;
+}
 async function rescheduleAppointment(id, session) {
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -315,6 +429,74 @@ async function rescheduleAppointment(id, session) {
   return data;
 }
 
+async function saveNoShowReason(id, reason) {
+  const appointment = await findAppointmentById(id);
+  if (!appointment) return null;
+  const now = new Date().toISOString();
+  const cleanReason = String(reason || "").replace(/[<>]/g, "").trim().slice(0, 500);
+  const previousFlow = latestNoShowFlow(appointment);
+  return updateAppointment(id, {
+    observacoes: appendAppointmentNote(appointment.observacoes, `Motivo informado pelo cliente: ${cleanReason}`),
+    respostas: [
+      ...appointmentHistory(appointment),
+      { autor: "cliente", texto: cleanReason, timestamp: now, tipo: "motivo_falta" },
+      {
+        autor: "sistema",
+        texto: "Motivo registrado. Aguardando decisão sobre remarcação.",
+        timestamp: now,
+        tipo: "no_show_flow",
+        etapa: "aguardando_remarcacao",
+        valorOriginal: Number(previousFlow?.valorOriginal) || 0
+      }
+    ]
+  });
+}
+
+async function closeNoShowFollowUp(id) {
+  const appointment = await findAppointmentById(id);
+  if (!appointment) return null;
+  const now = new Date().toISOString();
+  const previousFlow = latestNoShowFlow(appointment);
+  return updateAppointment(id, {
+    observacoes: appendAppointmentNote(appointment.observacoes, "Cliente optou por não remarcar a consulta."),
+    respostas: [...appointmentHistory(appointment), {
+      autor: "sistema",
+      texto: "Cliente optou por não remarcar.",
+      timestamp: now,
+      tipo: "no_show_flow",
+      etapa: "encerrado",
+      valorOriginal: Number(previousFlow?.valorOriginal) || 0
+    }]
+  });
+}
+
+async function rescheduleNoShowAppointment(id, session) {
+  const appointment = await findAppointmentById(id);
+  if (!appointment) return null;
+  const now = new Date().toISOString();
+  const previousFlow = latestNoShowFlow(appointment);
+  const originalValue = Number(session.valorOriginal ?? previousFlow?.valorOriginal) || 0;
+  return updateAppointment(id, {
+    agendamento_dia: session.diaLabel,
+    agendamento_turno: session.periodo,
+    agendamento_data_valor: session.diaValor,
+    valor_final: originalValue,
+    status: "Pendente",
+    observacoes: appendAppointmentNote(
+      appointment.observacoes,
+      `Consulta remarcada após a falta para ${session.diaLabel}, período ${session.periodo}. A reserva anterior foi substituída.`
+    ),
+    respostas: [...appointmentHistory(appointment), {
+      autor: "sistema",
+      texto: `Consulta remarcada para ${session.diaLabel}, ${session.periodo}.`,
+      timestamp: now,
+      tipo: "no_show_flow",
+      etapa: "remarcado",
+      valorOriginal: originalValue
+    }],
+    timestamp: now
+  });
+}
 function hashAdminPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
@@ -511,6 +693,18 @@ if (!disabledWhatsApp) {
     qrcode.generate(qr, { small: true });
     addLog("QR Code do WhatsApp gerado.");
   });
+  client.on("authenticated", () => {
+    botStatus = "AUTENTICADO";
+    latestQrCode = null;
+    addLog("QR Code aceito; WhatsApp autenticado. Aguardando sincronizacao.");
+  });
+  client.on("loading_screen", (percent, message) => {
+    botStatus = "SINCRONIZANDO";
+    addLog(`WhatsApp sincronizando: ${percent}%${message ? ` (${message})` : ""}.`);
+  });
+  client.on("change_state", (state) => {
+    addLog(`Estado da conexao do WhatsApp: ${state}.`);
+  });
   client.on("ready", () => {
     botStatus = "CONECTADO";
     latestQrCode = null;
@@ -563,21 +757,72 @@ function menuText(name) {
     "Digite apenas o número da opção. Você pode enviar *menu* a qualquer momento.";
 }
 
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function simulateTyping(to) {
+  if (!client) return false;
+  let chat = null;
+  try {
+    chat = await client.getChatById(to);
+    await chat.sendStateTyping();
+    await delay(TYPING_DELAY_MS);
+    return true;
+  } catch (error) {
+    addLog(`Não foi possível exibir o estado de digitação para ${to}: ${error.message}`, "warn");
+    return false;
+  } finally {
+    if (chat) await chat.clearState().catch(() => {});
+  }
+}
+
 async function sendMessage(to, text) {
-  if (!client) return;
+  if (!client) return false;
+  await simulateTyping(to);
   await client.sendMessage(to, text);
   const session = sessions.get(to);
   if (session) session.historico.push({ autor: "bot", texto: text, timestamp: new Date().toISOString() });
+  return true;
 }
 
 async function sendPixInstructions(to) {
+  if (!client) return false;
   const session = sessions.get(to);
   const caption = `Pagamento via *Pix*\n\nValor: *${formatMoney(session?.valorFinal)}*\nChave Pix: *${PIX_KEY}*\n\nQuando efetuar o pagamento, envie o comprovante aqui com a palavra *feito* na legenda.`;
   const media = MessageMedia.fromFilePath(PIX_QR_PATH);
+  await simulateTyping(to);
   await client.sendMessage(to, media, { caption });
   if (session) session.historico.push({ autor: "bot", texto: `[QR Code Pix enviado]\n${caption}`, timestamp: new Date().toISOString() });
+  return true;
 }
 
+function noShowSessionFromAppointment(appointment) {
+  const flow = latestNoShowFlow(appointment);
+  return {
+    from: appointment.from,
+    phone: appointment.from,
+    clientePhone: appointment.from,
+    nome: appointment.pushname || "",
+    servico: appointment.servico || "Atendimento",
+    pagamento: appointment.pagamento || "A combinar",
+    appointmentId: appointment.id,
+    valorOriginal: Number(flow?.valorOriginal) || 0,
+    etapa: flow?.etapa === "aguardando_remarcacao" ? "remarcar_falta" : "motivo_falta",
+    consentimento: true,
+    historico: [],
+    timestamp: new Date().toISOString()
+  };
+}
+
+async function notifyNoShow(appointment) {
+  if (!appointment?.from) return false;
+  sessions.set(appointment.from, noShowSessionFromAppointment(appointment));
+  return sendMessage(
+    appointment.from,
+    `Olá${appointment.pushname ? `, *${appointment.pushname}*` : ""}. Identificamos que você não conseguiu comparecer à consulta de *${appointment.agendamento_dia || "data combinada"}*. O agendamento anterior foi encerrado, o horário foi liberado e nenhum valor ficará lançado para essa falta.\n\nVocê poderia nos contar brevemente o motivo do não comparecimento? Depois disso, posso ajudar a remarcar sua consulta.`
+  );
+}
 async function sendAppointmentConfirmation(to, session) {
   await sendMessage(to, `Confira sua solicitação:\n\nNome: *${session.nome}*\nCPF: *${maskedCpf(session.cpf)}*\nAtendimento: *${session.servico}*\nValor: *${formatMoney(session.valorFinal)}*\nDia: *${session.diaLabel}*\nPeríodo: *${session.periodo}*\nPagamento: *${session.pagamento}*\n\n1️⃣ Confirmar\n2️⃣ Cancelar`);
 }
@@ -625,19 +870,96 @@ async function handleWhatsAppMessage(msg) {
   }
 
   if (!sessions.has(msg.from)) {
-    /*
-     * Uma sessão só começa com saudação ou palavra configurada. Isso impede o
-     * bot de responder espontaneamente a qualquer conversa do número conectado.
-     */
-    if (!isStartMessage(rawText) && !isStartKeywordMessage(rawText)) return;
-    await startConversation(msg);
-    return;
+    let pendingNoShow = null;
+    try {
+      pendingNoShow = await findPendingNoShowFollowUp(msg.from);
+    } catch (error) {
+      addLog(`Falha ao recuperar retorno de não comparecimento: ${error.message}`, "error");
+    }
+    if (pendingNoShow) {
+      sessions.set(msg.from, noShowSessionFromAppointment(pendingNoShow));
+    } else {
+      /*
+       * Uma sessão comum só começa com saudação ou palavra configurada. Retornos
+       * de falta são recuperados do agendamento mesmo depois de reiniciar o bot.
+       */
+      if (!isStartMessage(rawText) && !isStartKeywordMessage(rawText)) return;
+      await startConversation(msg);
+      return;
+    }
   }
 
   const session = sessions.get(msg.from);
   session.timestamp = new Date().toISOString();
   session.historico.push({ autor: "cliente", texto: rawText, timestamp: session.timestamp });
 
+  if (session.etapa === "motivo_falta") {
+    if (rawText.length < 2) {
+      await sendMessage(msg.from, "Conte brevemente o motivo da falta para que possamos registrar corretamente.");
+      return;
+    }
+    try {
+      const updated = await saveNoShowReason(session.appointmentId, rawText);
+      session.valorOriginal = Number(latestNoShowFlow(updated)?.valorOriginal) || session.valorOriginal;
+      session.etapa = "remarcar_falta";
+      await sendMessage(msg.from, "Obrigado por nos contar. Você deseja remarcar essa consulta?\n\n1️⃣ Sim, quero remarcar\n2️⃣ Não quero remarcar agora");
+    } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Não consegui registrar sua resposta agora. Por favor, tente novamente em alguns instantes.");
+    }
+    return;
+  }
+
+  if (session.etapa === "remarcar_falta") {
+    const wantsReschedule = text === "1" || text === "sim" || text.startsWith("sim ") || text.includes("remarc");
+    const declinesReschedule = text === "2" || text === "nao" || text.startsWith("nao ");
+    if (!wantsReschedule && !declinesReschedule) {
+      await sendMessage(msg.from, "Responda *1* para remarcar ou *2* para não remarcar agora.");
+      return;
+    }
+    if (declinesReschedule) {
+      try { await closeNoShowFollowUp(session.appointmentId); } catch (error) { addLog(error.message, "error"); }
+      await sendMessage(msg.from, "Tudo bem. A consulta anterior continua encerrada e sem valor no financeiro. Quando quiser agendar novamente, envie *menu*.");
+      sessions.delete(msg.from);
+      return;
+    }
+    session.dias = nextWorkingDays(botConfig.diasParaExibir || 6);
+    session.etapa = "reagendamento_falta_dia";
+    await sendMessage(msg.from, "Para qual novo dia você deseja remarcar?\n\n" + session.dias.map((day, index) => `${index + 1}️⃣ ${day.label}`).join("\n"));
+    return;
+  }
+
+  if (session.etapa === "reagendamento_falta_dia") {
+    const selected = session.dias?.[Number(text) - 1];
+    if (!selected) {
+      await sendMessage(msg.from, "Escolha um dos números de dia apresentados.");
+      return;
+    }
+    session.diaLabel = selected.label;
+    session.diaValor = selected.value;
+    session.etapa = "reagendamento_falta_periodo";
+    await sendMessage(msg.from, "Qual novo período você prefere?\n\n" + botConfig.periodos.map((period, index) => `${index + 1}️⃣ ${period}`).join("\n"));
+    return;
+  }
+
+  if (session.etapa === "reagendamento_falta_periodo") {
+    const period = botConfig.periodos[Number(text) - 1];
+    if (!period) {
+      await sendMessage(msg.from, "Escolha um dos períodos apresentados.");
+      return;
+    }
+    session.periodo = period;
+    try {
+      await rescheduleNoShowAppointment(session.appointmentId, session);
+      await sendMessage(msg.from, `✅ Consulta remarcada.\n\nNovo dia: *${session.diaLabel}*\nNovo período: *${session.periodo}*\nStatus: *Pendente de confirmação da equipe*\n\nA reserva antiga foi substituída por esta nova.`);
+      addLog(`Consulta de ${session.nome || msg.from} remarcada após não comparecimento.`);
+      sessions.delete(msg.from);
+    } catch (error) {
+      addLog(error.message, "error");
+      await sendMessage(msg.from, "Não consegui salvar a nova data agora. Tente novamente em alguns instantes.");
+    }
+    return;
+  }
   if (session.consentimento && (text === "menu" || text === "inicio")) {
     session.etapa = "menu";
     await sendMessage(msg.from, menuText(session.nome));
@@ -1031,10 +1353,18 @@ if (client) {
   client.on("message", (msg) => {
     handleWhatsAppMessage(msg).catch((error) => addLog(error.stack || error.message, "error"));
   });
-  client.initialize().catch((error) => {
+}
+
+async function initializeWhatsApp() {
+  if (!client) return;
+  try {
+    addLog(`Inicializando cliente do WhatsApp com Node ${process.version}.`);
+    await client.initialize();
+  } catch (error) {
     botStatus = "ERRO";
-    addLog(`Falha ao iniciar WhatsApp: ${error.message}`, "error");
-  });
+    addLog(`Falha ao iniciar WhatsApp: ${error.stack || error.message}`, "error");
+    await client.destroy().catch(() => {});
+  }
 }
 
 /* ==========================================================================
@@ -1282,6 +1612,28 @@ app.post("/api/admin/appointments/status", async (req, res, next) => {
     res.json({ success: true, appointment });
   } catch (e) { next(e); }
 });
+app.post("/api/admin/appointments/attendance", async (req, res, next) => {
+  try {
+    if (!req.body.id || typeof req.body.attended !== "boolean") {
+      return res.status(400).json({ error: "Informe o agendamento e a confirmação de presença." });
+    }
+    const appointment = await recordAttendance(req.body.id, req.body.attended, req.body.note);
+    if (supabase && !appointment) return res.status(404).json({ error: "Agendamento não encontrado." });
+    let notified = null;
+    if (!req.body.attended && appointment) {
+      try {
+        notified = await notifyNoShow(appointment);
+      } catch (error) {
+        notified = false;
+        addLog(`Falta registrada, mas a notificação para ${appointment.from} falhou: ${error.message}`, "error");
+      }
+    }
+    res.json({ success: true, appointment, notified });
+  } catch (error) {
+    if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });
+    next(error);
+  }
+});
 app.post("/api/admin/appointments/clear", async (req, res, next) => {
   try {
     if (req.headers["x-confirm-action"] !== "CLEAR_APPOINTMENTS") return res.status(400).json({ error: "Confirmação explícita necessária." });
@@ -1380,9 +1732,16 @@ async function startServer() {
       addLog(`Falha ao sincronizar dados administrativos: ${error.message}`, "error");
     }
   }
-  return server.listen(PORT, () => {
-    addLog(`Servidor Sentir Bem ativo na porta ${PORT}.`);
-    showServerLinks();
+  return new Promise((resolve, reject) => {
+    const handleListenError = (error) => reject(error);
+    server.once("error", handleListenError);
+    server.listen(PORT, () => {
+      server.off("error", handleListenError);
+      addLog(`Servidor Sentir Bem ativo na porta ${PORT}.`);
+      showServerLinks();
+      initializeWhatsApp();
+      resolve(server);
+    });
   });
 }
 
@@ -1416,6 +1775,8 @@ module.exports = {
   isCrisisMessage,
   isValidCpf,
   isStartKeywordMessage,
+  isAttendancePayment,
+  isFinancialAppointment,
   isStartMessage,
   normalize
 };

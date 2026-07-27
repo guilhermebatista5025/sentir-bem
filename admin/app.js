@@ -91,6 +91,7 @@ function bindInterface() {
   document.getElementById("dismiss-safety").addEventListener("click", () => document.getElementById("safety-banner").hidden = true);
   document.getElementById("global-search").addEventListener("input", (event) => applySearch(event.target.value));
   document.getElementById("appointment-filter").addEventListener("change", renderAppointments);
+  document.getElementById("presence-filter").addEventListener("change", renderPresence);
   document.getElementById("prev-month").addEventListener("click", () => changeMonth(-1));
   document.getElementById("next-month").addEventListener("click", () => changeMonth(1));
   document.getElementById("clear-appointments").addEventListener("click", clearAppointments);
@@ -443,6 +444,7 @@ function renderAllData() {
   renderSessions();
   renderPatients();
   renderAppointments();
+  renderPresence();
   renderCalendar();
   renderDayAppointments();
   renderFinance();
@@ -461,6 +463,7 @@ function renderMetrics() {
     "chatbot-appointments": state.appointments.length,
     "chatbot-resolution": `${rate}%`,
     "agenda-badge": state.appointments.length,
+    "presence-badge": presenceAppointments().filter(isOpenAttendance).length,
     "sessions-badge": state.sessions.length,
     "active-session-count": `${state.sessions.length} ativa${state.sessions.length === 1 ? "" : "s"}`,
     "patient-count": `${state.patients.length} paciente${state.patients.length === 1 ? "" : "s"}`
@@ -532,30 +535,85 @@ function renderAppointments() {
   appointments.forEach((item) => {
     const row = create("tr", "searchable");
     const date = item.dayLabel || (item.date ? formatDateOnly(item.date) : "Data a confirmar");
+    const actions = [actionButton("Detalhes", "details-appointment", item.id)];
+    if (!isClosedAttendance(item)) actions.push(actionButton("Avançar", "advance-appointment", item.id));
     row.append(
       tablePerson(displayName(item), formatPhone(item.phone)),
       create("td", "", item.service || "Não informado"),
       tablePerson(date, item.period || "Período a confirmar"),
       cellWith(statusBadge(item.status)),
-      actionCell([
-        actionButton("Detalhes", "details-appointment", item.id),
-        actionButton("Avançar", "advance-appointment", item.id)
-      ])
+      actionCell(actions)
     );
     body.append(row);
   });
 }
 
+function isPresenceAppointment(item) {
+  const payment = normalizeText(item?.payment);
+  return payment === "pix" || payment === "presencial" || payment === "presencialmente";
+}
+
+function isOpenAttendance(item) {
+  return ["pendente", "confirmado"].includes(normalizeText(item?.status));
+}
+
+function isClosedAttendance(item) {
+  return ["concluido", "cancelado", "nao compareceu"].includes(normalizeText(item?.status));
+}
+
+function isFinancialItem(item) {
+  return !["cancelado", "nao compareceu"].includes(normalizeText(item?.status)) && item.value > 0;
+}
+
+function presenceAppointments() {
+  return state.appointments.filter(isPresenceAppointment);
+}
+
+function renderPresence() {
+  const allItems = presenceAppointments();
+  const filter = document.getElementById("presence-filter").value;
+  const items = filter === "open"
+    ? allItems.filter(isOpenAttendance)
+    : filter ? allItems.filter((item) => item.status === filter) : allItems;
+  setText("presence-pending", allItems.filter(isOpenAttendance).length);
+  setText("presence-attended", allItems.filter((item) => normalizeText(item.status) === "concluido").length);
+  setText("presence-missed", allItems.filter((item) => normalizeText(item.status) === "nao compareceu").length);
+  const body = document.getElementById("presence-body");
+  body.replaceChildren();
+  if (!items.length) return body.append(emptyRow(6, "Nenhum atendimento via Pix ou presencial encontrado."));
+  items.forEach((item) => {
+    const row = create("tr", "searchable");
+    const date = item.dayLabel || (item.date ? formatDateOnly(item.date) : "Data a confirmar");
+    const notes = create("td", "presence-note", item.notes || "Sem observações");
+    notes.title = item.notes || "Sem observações";
+    const actions = [actionButton("Detalhes", "details-appointment", item.id)];
+    if (isOpenAttendance(item)) {
+      const attended = actionButton("Compareceu", "mark-attended", item.id);
+      attended.classList.add("success");
+      actions.push(attended, actionButton("Não compareceu", "mark-no-show", item.id, true));
+    }
+    row.append(
+      tablePerson(displayName(item), formatPhone(item.phone)),
+      create("td", "", item.payment || "A combinar"),
+      tablePerson(date, item.period || "Período a confirmar"),
+      cellWith(statusBadge(item.status)),
+      notes,
+      actionCell(actions)
+    );
+    body.append(row);
+  });
+}
 function renderFinance() {
-  const values = state.appointments.map((item) => item.value).filter((value) => Number.isFinite(value) && value > 0);
+  const financialAppointments = state.appointments.filter(isFinancialItem);
+  const values = financialAppointments.map((item) => item.value);
   const total = values.reduce((sum, value) => sum + value, 0);
   setText("finance-total", money(total));
   setText("finance-paid-count", values.length);
   setText("finance-average", money(values.length ? total / values.length : 0));
   const body = document.getElementById("finance-body");
   body.replaceChildren();
-  if (!state.appointments.length) return body.append(emptyRow(5, "Nenhum lançamento disponível."));
-  state.appointments.forEach((item) => {
+  if (!financialAppointments.length) return body.append(emptyRow(5, "Nenhum lançamento disponível."));
+  financialAppointments.forEach((item) => {
     const row = create("tr", "searchable");
     const valueButton = create("button", "finance-value-button", item.value > 0 ? money(item.value) : "Não informado");
     valueButton.type = "button";
@@ -574,7 +632,7 @@ function renderFinance() {
 
 function openFinanceDetails(appointmentId = null) {
   const records = state.appointments
-    .filter((item) => item.value > 0 && (appointmentId === null || String(item.id) === String(appointmentId)))
+    .filter((item) => isFinancialItem(item) && (appointmentId === null || String(item.id) === String(appointmentId)))
     .sort((a, b) => dateValue(b.timestamp) - dateValue(a.timestamp));
   const total = records.reduce((sum, item) => sum + item.value, 0);
   setText("finance-modal-total", money(total));
@@ -1168,6 +1226,36 @@ async function advanceAppointment(id) {
   } catch (error) { toast(error.message, true); }
 }
 
+async function setAttendance(id, attended) {
+  const item = state.appointments.find((appointment) => String(appointment.id) === String(id));
+  if (!item) return;
+  let note = "";
+  if (attended) {
+    if (!confirm(`Confirmar que ${displayName(item)} compareceu e concluir o atendimento?`)) return;
+  } else {
+    const answer = prompt("Observação interna sobre a falta (opcional). O bot perguntará o motivo diretamente ao cliente:", "");
+    if (answer === null) return;
+    note = answer;
+    if (!confirm("Confirmar o não comparecimento? O horário será liberado, o valor sairá do Financeiro e o cliente receberá uma mensagem para informar o motivo e remarcar.")) return;
+  }
+  try {
+    const result = await api("/appointments/attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, attended, note })
+    });
+    if (result.appointment) {
+      const index = state.appointments.findIndex((appointment) => String(appointment.id) === String(id));
+      state.appointments[index] = normalizeAppointment(result.appointment);
+    }
+    renderAllData();
+    if (attended) toast("Presença confirmada e atendimento concluído.");
+    else if (result.notified === false) toast("Falta registrada. O WhatsApp está indisponível; o retorno será retomado quando o cliente enviar mensagem.", true);
+    else toast("Falta registrada, horário liberado e cliente notificado para explicar o motivo e remarcar.");
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
 async function clearAppointments() {
   if (!state.appointments.length) return toast("Não há registros para limpar.");
   if (!confirm("Apagar definitivamente todo o histórico de agendamentos? Esta ação não pode ser desfeita.")) return;
@@ -1205,6 +1293,8 @@ function handleDelegatedClick(event) {
   if (action.dataset.action === "delete-patient") deletePatient(key);
   if (action.dataset.action === "details-appointment") openAppointmentDetails(state.appointments.find((item) => String(item.id) === String(key)));
   if (action.dataset.action === "advance-appointment") advanceAppointment(key);
+  if (action.dataset.action === "mark-attended") setAttendance(key, true);
+  if (action.dataset.action === "mark-no-show") setAttendance(key, false);
 }
 
 function openEditModal(field, label) {

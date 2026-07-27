@@ -175,6 +175,12 @@ tbody tr:last-child td { border-bottom: 0; }
 .status { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #fff0d9; color: #8a4e00; font-size: 10px; font-weight: 800; }
 .status.confirmado, .status.concluido { background: #e2f3eb; color: #086143; }
 .status.cancelado { background: #ffebe8; color: #a51e14; }
+.status.nao-compareceu { background: #ffebe8; color: #a51e14; }
+.table-action.success { border-color: #acd9c9; color: #08704e; }
+.table-action.success:hover { background: #e2f3eb; }
+.table-actions { flex-wrap: wrap; min-width: 190px; }
+.presence-card table { min-width: 980px; }
+.presence-note { max-width: 260px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .count-pill { padding: 5px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 11px; font-weight: 800; }
 select, input, textarea { border: 1px solid #becdca; border-radius: 10px; background: #fff; color: var(--text); }
 select { padding: 8px 35px 8px 10px; }

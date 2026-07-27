@@ -10,7 +10,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   classifySupabaseKey,
+  isAttendancePayment,
   isCrisisMessage,
+  isFinancialAppointment,
   isValidCpf,
   isStartKeywordMessage,
   isStartMessage,
@@ -72,4 +74,17 @@ test("diferencia chaves públicas e privadas do Supabase", () => {
   assert.equal(classifySupabaseKey("sb_publishable_exemplo"), "anon");
   assert.equal(classifySupabaseKey("sb_secret_exemplo"), "secret");
   assert.equal(classifySupabaseKey("valor-invalido"), "unknown");
+});
+test("inclui Pix e pagamento presencial no controle de presença", () => {
+  assert.equal(isAttendancePayment("Pix"), true);
+  assert.equal(isAttendancePayment("Presencialmente"), true);
+  assert.equal(isAttendancePayment("presencial"), true);
+  assert.equal(isAttendancePayment("Cartão"), false);
+});
+
+test("retira cancelamentos e faltas do total financeiro", () => {
+  assert.equal(isFinancialAppointment({ status: "Confirmado", valor_final: 150 }), true);
+  assert.equal(isFinancialAppointment({ status: "Não compareceu", valor_final: 150 }), false);
+  assert.equal(isFinancialAppointment({ status: "Cancelado", valor_final: 150 }), false);
+  assert.equal(isFinancialAppointment({ status: "Pendente", valor_final: 0 }), false);
 });
