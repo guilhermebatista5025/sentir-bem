@@ -64,7 +64,29 @@ function bindNavigation() {
   document.querySelectorAll("[data-view], [data-view-link]").forEach((element) => {
     element.addEventListener("click", () => showView(element.dataset.view || element.dataset.viewLink));
   });
-  document.getElementById("mobile-menu").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+  const menuButton = document.getElementById("mobile-menu");
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  const setMenuOpen = (open) => {
+    sidebar.classList.toggle("open", open);
+    document.body.classList.toggle("menu-open", open);
+    menuButton.setAttribute("aria-expanded", String(open));
+    menuButton.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    menuButton.querySelector(".material-symbols-outlined").textContent = open ? "close" : "menu";
+  };
+  menuButton.setAttribute("aria-controls", "sidebar");
+  menuButton.setAttribute("aria-expanded", "false");
+  menuButton.addEventListener("click", () => setMenuOpen(!sidebar.classList.contains("open")));
+  backdrop.addEventListener("click", () => setMenuOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && sidebar.classList.contains("open")) {
+      setMenuOpen(false);
+      menuButton.focus();
+    }
+  });
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) setMenuOpen(false);
+  });
   window.addEventListener("hashchange", openInitialView);
 }
 
@@ -79,6 +101,11 @@ function showView(name, updateHash = true) {
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view === target));
   document.querySelectorAll(".nav-item[data-view]").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   document.getElementById("sidebar").classList.remove("open");
+  document.body.classList.remove("menu-open");
+  const menuButton = document.getElementById("mobile-menu");
+  menuButton.setAttribute("aria-expanded", "false");
+  menuButton.setAttribute("aria-label", "Abrir menu");
+  menuButton.querySelector(".material-symbols-outlined").textContent = "menu";
   document.title = `${target.dataset.title} — Sentir Bem`;
   if (updateHash && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
   document.getElementById("global-search").value = "";

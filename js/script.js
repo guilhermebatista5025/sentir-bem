@@ -276,32 +276,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (menuToggle && navLinks) {
-    menuToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
-      
-      // Animate menu toggle bars
+    const setMobileMenuOpen = (open) => {
+      navLinks.classList.toggle('active', open);
+      menuToggle.setAttribute('aria-expanded', String(open));
+      menuToggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+      document.body.classList.toggle('nav-open', open);
+      document.body.style.overflow = open ? 'hidden' : '';
       const spans = menuToggle.querySelectorAll('span');
-      if (navLinks.classList.contains('active')) {
-        spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-        spans[1].style.opacity = '0';
-        spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
-      } else {
-        spans[0].style.transform = 'none';
-        spans[1].style.opacity = '1';
-        spans[2].style.transform = 'none';
-      }
+      spans[0].style.transform = open ? 'rotate(45deg) translate(5px, 5px)' : 'none';
+      spans[1].style.opacity = open ? '0' : '1';
+      spans[2].style.transform = open ? 'rotate(-45deg) translate(5px, -5px)' : 'none';
+    };
+
+    menuToggle.addEventListener('click', () => {
+      setMobileMenuOpen(!navLinks.classList.contains('active'));
     });
 
     // Close menu when a link is clicked
     const links = navLinks.querySelectorAll('a');
     links.forEach(link => {
       link.addEventListener('click', () => {
-        navLinks.classList.remove('active');
-        const spans = menuToggle.querySelectorAll('span');
-        spans[0].style.transform = 'none';
-        spans[1].style.opacity = '1';
-        spans[2].style.transform = 'none';
+        setMobileMenuOpen(false);
       });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && navLinks.classList.contains('active')) {
+        setMobileMenuOpen(false);
+        menuToggle.focus();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
+        setMobileMenuOpen(false);
+      }
     });
   }
 
